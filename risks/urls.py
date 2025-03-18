@@ -19,4 +19,6 @@ urlpatterns = [
     # Authentication URLs
     path('accounts/signup/', views.signup, name='signup'),
     path('accounts/profile/', views.profile, name='profile'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('reports/export-csv/', views.export_risks_csv, name='export_risks_csv'),
 ]

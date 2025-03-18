@@ -1,0 +1,204 @@
+{% extends 'risks/base.html' %}
+
+{% block title %}Dashboard - Risk Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Risk Management Dashboard</h1>
+        <p class="lead">Overview of all projects and risks in the system.</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'export_risks_csv' %}" class="btn btn-success me-2">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+        </a>
+        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list"></i> View Projects
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Projects</h5>
+                <p class="card-text display-4">{{ project_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Risks</h5>
+                <p class="card-text display-4">{{ risk_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Open Risks</h5>
+                <p class="card-text display-4">{{ open_risks }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Mitigated Risks</h5>
+                <p class="card-text display-4">{{ mitigated_risks }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row mb-4">
+    <!-- Risk Distribution Chart -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Risk Severity Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="riskSeverityChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risk by Category Chart -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Risks by Category</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="riskCategoryChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- High Priority Risks -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">High Priority Risks</h5>
+            </div>
+            <div class="card-body">
+                {% if high_priority_risks %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Risk</th>
+                                <th>Project</th>
+                                <th>Category</th>
+                                <th>Score</th>
+                                <th>Likelihood</th>
+                                <th>Impact</th>
+                                <th>Owner</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for risk in high_priority_risks %}
+                            <tr class="{% if risk.risk_level == 'High' %}risk-score-high{% elif risk.risk_level == 'Medium' %}risk-score-medium{% endif %}">
+                                <td>{{ risk.title }}</td>
+                                <td>{{ risk.project.name }}</td>
+                                <td>{{ risk.category.name }}</td>
+                                <td><strong>{{ risk.risk_score }}</strong></td>
+                                <td>{{ risk.get_likelihood_display }}</td>
+                                <td>{{ risk.get_impact_display }}</td>
+                                <td>{{ risk.owner }}</td>
+                                <td>
+                                    <a href="{% url 'edit_risk' risk.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                    <a href="{% url 'project_detail' risk.project.id %}" class="btn btn-sm btn-outline-primary">View Project</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p>No high priority risks at this time.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script>
+    // Prepare data from Django templates
+    var highRisks = Number("{{ high_risks }}");
+    var mediumRisks = Number("{{ medium_risks }}");
+    var lowRisks = Number("{{ low_risks }}");
+    
+    var categoryLabels = [];
+    var categoryData = [];
+    
+    // Get data from Django context as JSON
+    var risksByCategory = JSON.parse('{{ risks_by_category|escapejs|safe }}');
+    
+    // Convert the JSON object to arrays for Chart.js
+    for (var category in risksByCategory) {
+        categoryLabels.push(category);
+        categoryData.push(risksByCategory[category]);
+    }
+
+    // Risk Severity Chart
+    var severityCtx = document.getElementById('riskSeverityChart').getContext('2d');
+    var severityChart = new Chart(severityCtx, {
+        type: 'pie',
+        data: {
+            labels: ['High', 'Medium', 'Low'],
+            datasets: [{
+                data: [highRisks, mediumRisks, lowRisks],
+                backgroundColor: ['#dc3545', '#ffc107', '#28a745']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+    
+    // Risk Category Chart
+    var categoryCtx = document.getElementById('riskCategoryChart').getContext('2d');
+    var categoryChart = new Chart(categoryCtx, {
+        type: 'bar',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                label: 'Number of Risks',
+                data: categoryData,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -5,6 +5,9 @@ from .forms import ProjectForm, RiskForm, CategoryForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+import csv
+from django.http import HttpResponse
+from datetime import datetime
 
 # User registration view
 def signup(request):
@@ -178,3 +181,80 @@ def delete_risk(request, risk_id):
         messages.success(request, f'Risk "{risk_title}" deleted successfully!')
         return redirect('project_detail', project_id=project_id)
     return render(request, 'risks/delete_risk.html', {'risk': risk})
+
+@login_required
+def dashboard(request):
+    # Get all projects and risks
+    projects = Project.objects.all()
+    risks = Risk.objects.all()
+    
+    # Project statistics
+    project_count = projects.count()
+    
+    # Risk statistics
+    risk_count = risks.count()
+    high_risks = risks.filter(likelihood=3, impact=3).count()
+    medium_risks = risks.filter(likelihood=2, impact=2).count()
+    low_risks = risks.filter(likelihood=1, impact=1).count()
+    
+    # Risks by status
+    open_risks = risks.filter(status='Open').count()
+    mitigated_risks = risks.filter(status='Mitigated').count()
+    closed_risks = risks.filter(status='Closed').count()
+    
+    # Risks by category
+    categories = Category.objects.all()
+    risks_by_category = {}
+    for category in categories:
+        risks_by_category[category.name] = risks.filter(category=category).count()
+    
+    # Recent risks (last 10)
+    recent_risks = risks.order_by('-created_at')[:10]
+    
+    # High priority risks
+    high_priority_risks = risks.filter(likelihood__gte=2, impact__gte=2, status='Open').order_by('-likelihood', '-impact')[:10]
+    
+    context = {
+        'project_count': project_count,
+        'risk_count': risk_count,
+        'high_risks': high_risks,
+        'medium_risks': medium_risks,
+        'low_risks': low_risks,
+        'open_risks': open_risks,
+        'mitigated_risks': mitigated_risks,
+        'closed_risks': closed_risks,
+        'risks_by_category': risks_by_category,
+        'recent_risks': recent_risks,
+        'high_priority_risks': high_priority_risks,
+    }
+    
+    return render(request, 'risks/dashboard.html', context)
+
+@login_required
+def export_risks_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="risks_export_{datetime.now().strftime("%Y%m%d%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Project', 'Risk Title', 'Description', 'Category', 'Likelihood', 'Impact', 
+                    'Risk Score', 'Risk Level', 'Owner', 'Status', 'Created', 'Updated'])
+    
+    risks = Risk.objects.all().order_by('project__name', '-likelihood', '-impact')
+    
+    for risk in risks:
+        writer.writerow([
+            risk.project.name,
+            risk.title,
+            risk.description,
+            risk.category.name if risk.category else '',
+            risk.get_likelihood_display(),
+            risk.get_impact_display(),
+            risk.risk_score,
+            risk.risk_level,
+            risk.owner,
+            risk.status,
+            risk.created_at.strftime('%Y-%m-%d'),
+            risk.updated_at.strftime('%Y-%m-%d'),
+        ])
+    
+    return response
