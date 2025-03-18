@@ -193,9 +193,11 @@ def dashboard(request):
     
     # Risk statistics
     risk_count = risks.count()
-    high_risks = risks.filter(likelihood=3, impact=3).count()
-    medium_risks = risks.filter(likelihood=2, impact=2).count()
-    low_risks = risks.filter(likelihood=1, impact=1).count()
+    
+    # Calculate risk levels based on the risk_level property
+    high_risks = sum(1 for risk in risks if risk.risk_level == 'High')
+    medium_risks = sum(1 for risk in risks if risk.risk_level == 'Medium')
+    low_risks = sum(1 for risk in risks if risk.risk_level == 'Low')
     
     # Risks by status
     open_risks = risks.filter(status='Open').count()
@@ -212,7 +214,19 @@ def dashboard(request):
     recent_risks = risks.order_by('-created_at')[:10]
     
     # High priority risks
-    high_priority_risks = risks.filter(likelihood__gte=2, impact__gte=2, status='Open').order_by('-likelihood', '-impact')[:10]
+    high_priority_risks = risks.filter(status='Open').order_by('-likelihood', '-impact')[:10]
+    
+    # Prepare data for JSON serialization
+    severity_data = {
+        'high': high_risks,
+        'medium': medium_risks,
+        'low': low_risks
+    }
+    
+    category_data = {
+        'labels': list(risks_by_category.keys()),
+        'values': list(risks_by_category.values())
+    }
     
     context = {
         'project_count': project_count,
@@ -226,6 +240,8 @@ def dashboard(request):
         'risks_by_category': risks_by_category,
         'recent_risks': recent_risks,
         'high_priority_risks': high_priority_risks,
+        'severity_data': severity_data,
+        'category_data': category_data
     }
     
     return render(request, 'risks/dashboard.html', context)
