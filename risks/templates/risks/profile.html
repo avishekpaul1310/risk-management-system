@@ -1,0 +1,76 @@
+{% extends 'risks/base.html' %}
+
+{% block title %}My Profile - Risk Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>My Profile</h1>
+        <p class="lead">Manage your account information and view your risk activities.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Account Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Joined:</strong> {{ user.date_joined|date:"F d, Y" }}</p>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'password_change' %}" class="btn btn-outline-primary">Change Password</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">My Risks</h5>
+            </div>
+            <div class="card-body">
+                {% if risks %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Risk</th>
+                                <th>Project</th>
+                                <th>Category</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for risk in risks %}
+                            <tr class="{% if risk.risk_level == 'High' %}risk-score-high{% elif risk.risk_level == 'Medium' %}risk-score-medium{% elif risk.risk_level == 'Low' %}risk-score-low{% endif %}">
+                                <td>
+                                    <a href="{% url 'project_detail' risk.project.id %}">
+                                        {{ risk.title }}
+                                    </a>
+                                </td>
+                                <td>{{ risk.project.name }}</td>
+                                <td>{{ risk.category.name }}</td>
+                                <td><strong>{{ risk.risk_score }}</strong></td>
+                                <td>{{ risk.status }}</td>
+                                <td>{{ risk.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p>You haven't created any risks yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

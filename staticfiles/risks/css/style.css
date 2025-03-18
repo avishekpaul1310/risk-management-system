@@ -1,0 +1,71 @@
+/* Risk Management System Custom Styles */
+
+/* Risk score colors */
+.risk-score-high {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.risk-score-medium {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.risk-score-low {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+/* Form styling */
+.form-control, .form-select {
+    border-radius: 0.25rem;
+}
+
+/* Project cards */
+.project-card {
+    transition: transform 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.project-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Custom badge styles */
+.badge-risk-high {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-risk-medium {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-risk-low {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Header and Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Table improvements */
+.table thead th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,123,255,0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 1.5rem;
+    }
+}

@@ -1,0 +1,127 @@
+{% extends 'risks/base.html' %}
+
+{% block title %}{{ project.name }} - Risk Management{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                <li class="breadcrumb-item active">{{ project.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <h1>{{ project.name }}</h1>
+        <p>{{ project.description }}</p>
+        <p class="text-muted">Created: {{ project.created_at|date:"F d, Y" }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'edit_project' project.id %}" class="btn btn-outline-secondary">Edit Project</a>
+        <a href="{% url 'add_risk' project.id %}" class="btn btn-primary">Add Risk</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Risk Summary</h5>
+            </div>
+            <div class="card-body">
+                <h6>Risk Levels</h6>
+                <div class="progress mb-3" style="height: 25px;">
+                    {% if risk_stats.total > 0 %}
+                        {% with high_pct=risk_stats.high|floatformat:0|default:0 medium_pct=risk_stats.medium|floatformat:0|default:0 low_pct=risk_stats.low|floatformat:0|default:0 %}
+                            <div class="progress-bar bg-danger" role="progressbar" 
+                                style="width: '{% widthratio risk_stats.high risk_stats.total 100 %}%'">
+                                {{ risk_stats.high }} High
+                            </div>
+                            <div class="progress-bar bg-warning" role="progressbar" 
+                                style="width: '{% widthratio risk_stats.medium risk_stats.total 100 %}%'">
+                                {{ risk_stats.medium }} Medium
+                            </div>
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                style="width: '{% widthratio risk_stats.low risk_stats.total 100 %}%'">
+                                {{ risk_stats.low }} Low
+                            </div>
+                        {% endwith %}
+                    {% else %}
+                        <div class="progress-bar" role="progressbar" style="width: 100%">No risks</div>
+                    {% endif %}
+                </div>
+                
+                <h6>Risk Status</h6>
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Open
+                        <span class="badge bg-primary rounded-pill">{{ risk_stats.open }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Mitigated
+                        <span class="badge bg-primary rounded-pill">{{ risk_stats.mitigated }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Closed
+                        <span class="badge bg-primary rounded-pill">{{ risk_stats.closed }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Risks</h5>
+            </div>
+            <div class="card-body">
+                {% if risks %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Risk</th>
+                                <th>Category</th>
+                                <th>Likelihood</th>
+                                <th>Impact</th>
+                                <th>Score</th>
+                                <th>Owner</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for risk in risks %}
+                            <tr class="{% if risk.risk_level == 'High' %}risk-score-high{% elif risk.risk_level == 'Medium' %}risk-score-medium{% elif risk.risk_level == 'Low' %}risk-score-low{% endif %}">
+                                <td>{{ risk.title }}</td>
+                                <td>{{ risk.category }}</td>
+                                <td>{{ risk.get_likelihood_display }}</td>
+                                <td>{{ risk.get_impact_display }}</td>
+                                <td><strong>{{ risk.risk_score }}</strong></td>
+                                <td>{{ risk.owner }}</td>
+                                <td>{{ risk.status }}</td>
+                                <td>
+                                    <a href="{% url 'edit_risk' risk.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                    <a href="{% url 'delete_risk' risk.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p>No risks added to this project yet.</p>
+                    <a href="{% url 'add_risk' project.id %}" class="btn btn-success">Add Your First Risk</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

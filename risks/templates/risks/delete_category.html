@@ -1,0 +1,42 @@
+{% extends 'risks/base.html' %}
+
+{% block title %}Delete Category - {{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'categories' %}">Categories</a></li>
+                <li class="breadcrumb-item active">Delete Category</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Delete Category</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Are you sure you want to delete the category <strong>"{{ category.name }}"</strong>?</p>
+                
+                <div class="alert alert-warning">
+                    <p><strong>Warning:</strong> Deleting this category will remove it from all risks that use it. If risks are currently using this category, you won't be able to delete it.</p>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="text-end">
+                        <a href="{% url 'categories' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Delete Category</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

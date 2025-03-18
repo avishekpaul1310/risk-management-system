@@ -1,0 +1,52 @@
+{% extends 'risks/base.html' %}
+
+{% block title %}Delete Risk - {{ risk.title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'project_detail' risk.project.id %}">{{ risk.project.name }}</a></li>
+                <li class="breadcrumb-item active">Delete Risk</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Delete Risk</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Are you sure you want to delete the risk <strong>"{{ risk.title }}"</strong>?</p>
+                
+                <div class="alert alert-warning">
+                    <h6>Risk Details:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Title:</strong> {{ risk.title }}</li>
+                        <li><strong>Project:</strong> {{ risk.project.name }}</li>
+                        <li><strong>Category:</strong> {{ risk.category }}</li>
+                        <li><strong>Risk Score:</strong> {{ risk.risk_score }} ({{ risk.risk_level }})</li>
+                        <li><strong>Owner:</strong> {{ risk.owner }}</li>
+                        <li><strong>Status:</strong> {{ risk.status }}</li>
+                    </ul>
+                </div>
+                
+                <p><strong>This action cannot be undone.</strong></p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="text-end">
+                        <a href="{% url 'project_detail' risk.project.id %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Delete Risk</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
