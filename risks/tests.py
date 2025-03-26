@@ -1002,56 +1002,60 @@ class ModelValidationTests(TestCase):
     def test_risk_model_constraints(self):
         """Test constraints on the Risk model"""
         # Test that title is required
+        risk = Risk(
+            project=self.project,
+            title="",  # Empty title should raise error
+            description="A risk created for testing",
+            category=self.category,
+            likelihood=2,
+            impact=3,
+            owner="Test Owner",
+            status="Open"
+        )
         with self.assertRaises(ValidationError):
-            Risk.objects.create(
-                project=self.project,
-                title="",  # Empty title should raise error
-                description="A risk created for testing",
-                category=self.category,
-                likelihood=2,
-                impact=3,
-                owner="Test Owner",
-                status="Open"
-            )
+            risk.full_clean()  # This explicitly triggers validation
         
         # Test that likelihood must be a valid choice
+        risk = Risk(
+            project=self.project,
+            title="Test Risk",
+            description="A risk created for testing",
+            category=self.category,
+            likelihood=5,  # Invalid choice
+            impact=3,
+            owner="Test Owner",
+            status="Open"
+        )
         with self.assertRaises(ValidationError):
-            Risk.objects.create(
-                project=self.project,
-                title="Test Risk",
-                description="A risk created for testing",
-                category=self.category,
-                likelihood=5,  # Invalid choice
-                impact=3,
-                owner="Test Owner",
-                status="Open"
-            )
+            risk.full_clean()
         
         # Test that impact must be a valid choice
+        risk = Risk(
+            project=self.project,
+            title="Test Risk",
+            description="A risk created for testing",
+            category=self.category,
+            likelihood=2,
+            impact=5,  # Invalid choice
+            owner="Test Owner",
+            status="Open"
+        )
         with self.assertRaises(ValidationError):
-            Risk.objects.create(
-                project=self.project,
-                title="Test Risk",
-                description="A risk created for testing",
-                category=self.category,
-                likelihood=2,
-                impact=5,  # Invalid choice
-                owner="Test Owner",
-                status="Open"
-            )
+            risk.full_clean()
         
         # Test that status must be a valid choice
+        risk = Risk(
+            project=self.project,
+            title="Test Risk",
+            description="A risk created for testing",
+            category=self.category,
+            likelihood=2,
+            impact=3,
+            owner="Test Owner",
+            status="InvalidStatus"  # Invalid choice
+        )
         with self.assertRaises(ValidationError):
-            Risk.objects.create(
-                project=self.project,
-                title="Test Risk",
-                description="A risk created for testing",
-                category=self.category,
-                likelihood=2,
-                impact=3,
-                owner="Test Owner",
-                status="InvalidStatus"  # Invalid choice
-            )
+            risk.full_clean()
     
     def test_category_uniqueness(self):
         """Test that category names must be unique"""
