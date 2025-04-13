@@ -40,10 +40,11 @@ class RiskHistoryForm(forms.ModelForm):
 class RiskResponseForm(forms.ModelForm):
     class Meta:
         model = RiskResponse
-        fields = ['response_type', 'description', 'cost_estimate', 'responsible_person', 'target_date', 'status']
+        fields = ['response_type', 'description', 'cost_estimate', 'currency', 'responsible_person', 'target_date', 'status']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'response_type': forms.Select(attrs={'class': 'form-select'}),
+            'currency': forms.Select(attrs={'class': 'form-select'}),
             'cost_estimate': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
             'responsible_person': forms.TextInput(),
             'target_date': forms.DateInput(attrs={'type': 'date'}),

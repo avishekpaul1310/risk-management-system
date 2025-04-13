@@ -110,10 +110,18 @@ class RiskResponse(models.Model):
         ('Completed', 'Completed'),
     ]
     
+    CURRENCY_CHOICES = [
+        ('USD', 'US Dollar ($)'),
+        ('GBP', 'British Pound (£)'),
+        ('EUR', 'Euro (€)'),
+        ('INR', 'Indian Rupee (₹)'),
+    ]
+    
     risk = models.ForeignKey(Risk, on_delete=models.CASCADE, related_name='responses')
     response_type = models.CharField(max_length=20, choices=RESPONSE_TYPES)
     description = models.TextField()
     cost_estimate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='USD')
     responsible_person = models.CharField(max_length=100)
     target_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=RESPONSE_STATUS, default='Planned')
@@ -123,6 +131,15 @@ class RiskResponse(models.Model):
 
     def __str__(self):
         return f"{self.get_response_type_display()} - {self.risk.title}"
+        
+    def get_currency_symbol(self):
+        currency_symbols = {
+            'USD': '$',
+            'GBP': '£',
+            'EUR': '€',
+            'INR': '₹',
+        }
+        return currency_symbols.get(self.currency, '$')
 
 class UserProfile(models.Model):
     ROLE_CHOICES = [

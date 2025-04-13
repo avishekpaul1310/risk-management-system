@@ -1,6 +1,6 @@
 {% extends 'risks/base.html' %}
 
-{% block title %}Add Response to {{ risk.title }} | Project Risk Manager{% endblock %}
+{% block title %}Edit Response | Project Risk Manager{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -9,7 +9,7 @@
             <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
             <li class="breadcrumb-item"><a href="{% url 'project_detail' risk.project.id %}">{{ risk.project.name }}</a></li>
             <li class="breadcrumb-item"><a href="{% url 'risk_detail' risk.id %}">{{ risk.title }}</a></li>
-            <li class="breadcrumb-item active">Add Response</li>
+            <li class="breadcrumb-item active">Edit Response</li>
         </ol>
     </nav>
 
@@ -17,7 +17,7 @@
         <div class="col-md-10">
             <div class="card">
                 <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">Add Response to Risk: {{ risk.title }}</h5>
+                    <h5 class="card-title mb-0">Edit Response to Risk: {{ risk.title }}</h5>
                 </div>
                 <div class="card-body">
                     <form method="post">
@@ -74,7 +74,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="{{ form.target_date.id_for_label }}" class="form-label">Target Date</label>
-                                <input type="date" name="{{ form.target_date.name }}" id="{{ form.target_date.id_for_label }}" class="form-control {% if form.target_date.errors %}is-invalid{% endif %}" value="{{ form.target_date.value|default:'' }}">
+                                <input type="date" name="{{ form.target_date.name }}" id="{{ form.target_date.id_for_label }}" class="form-control {% if form.target_date.errors %}is-invalid{% endif %}" value="{{ form.target_date.value|date:'Y-m-d'|default:'' }}">
                                 {% if form.target_date.errors %}
                                 <div class="invalid-feedback">
                                     {{ form.target_date.errors }}
@@ -102,7 +102,7 @@
                         
                         <div class="text-end">
                             <a href="{% url 'risk_detail' risk.id %}" class="btn btn-outline-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Add Response</button>
+                            <button type="submit" class="btn btn-primary">Update Response</button>
                         </div>
                     </form>
                 </div>

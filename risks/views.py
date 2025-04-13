@@ -406,8 +406,15 @@ def edit_risk_response(request, response_id):
     risk = response.risk
     
     # Check if the user has permission to edit the response
-    user_profile = request.user.profile
-    if not user_profile.is_contributor and response.created_by != request.user:
+    try:
+        user_profile = request.user.profile
+        is_contributor = user_profile.is_contributor
+    except:
+        # If user doesn't have a profile yet, create one
+        UserProfile.objects.create(user=request.user, role='contributor')
+        is_contributor = True
+    
+    if not is_contributor and response.created_by != request.user:
         messages.error(request, "You don't have permission to edit this response.")
         return redirect('risk_detail', risk_id=risk.id)
     
@@ -433,8 +440,15 @@ def delete_risk_response(request, response_id):
     risk = response.risk
     
     # Check if the user has permission to delete the response
-    user_profile = request.user.profile
-    if not user_profile.is_manager and response.created_by != request.user:
+    try:
+        user_profile = request.user.profile
+        is_manager = user_profile.is_manager
+    except:
+        # If user doesn't have a profile yet, create one
+        UserProfile.objects.create(user=request.user, role='contributor')
+        is_manager = False
+    
+    if not is_manager and response.created_by != request.user:
         messages.error(request, "You don't have permission to delete this response.")
         return redirect('risk_detail', risk_id=risk.id)
     
