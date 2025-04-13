@@ -1,0 +1,185 @@
+{% extends 'risks/base.html' %}
+
+{% block title %}{{ risk.title }} | Project Risk Manager{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'project_detail' risk.project.id %}">{{ risk.project.name }}</a></li>
+            <li class="breadcrumb-item active">{{ risk.title }}</li>
+        </ol>
+    </nav>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Risk Details: {{ risk.title }}</h2>
+        <div>
+            <a href="{% url 'edit_risk' risk.id %}" class="btn btn-outline-primary">Edit Risk</a>
+            <a href="{% url 'add_risk_response' risk.id %}" class="btn btn-success">Add Response</a>
+        </div>
+    </div>
+
+    <!-- Risk Details Card -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Risk Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th style="width: 30%">Project</th>
+                            <td>{{ risk.project.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Description</th>
+                            <td>{{ risk.description|linebreaks }}</td>
+                        </tr>
+                        <tr>
+                            <th>Category</th>
+                            <td>{{ risk.category.name|default:"Not categorized" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Likelihood</th>
+                            <td>{{ risk.get_likelihood_display }}</td>
+                        </tr>
+                        <tr>
+                            <th>Impact</th>
+                            <td>{{ risk.get_impact_display }}</td>
+                        </tr>
+                        <tr>
+                            <th>Risk Score</th>
+                            <td><strong>{{ risk.risk_score }}</strong> ({{ risk.risk_level }})</td>
+                        </tr>
+                        <tr>
+                            <th>Owner</th>
+                            <td>{{ risk.owner }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td>{{ risk.status }}</td>
+                        </tr>
+                        <tr>
+                            <th>Created</th>
+                            <td>{{ risk.created_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Last Updated</th>
+                            <td>{{ risk.updated_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Risk Responses -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Risk Responses</h5>
+                </div>
+                <div class="card-body">
+                    {% if responses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for response in responses %}
+                                <tr>
+                                    <td>{{ response.get_response_type_display }}</td>
+                                    <td>{{ response.status }}</td>
+                                    <td>{{ response.updated_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#response-{{ response.id }}" aria-expanded="false">Details</button>
+                                        <a href="{% url 'edit_risk_response' response.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                        <a href="{% url 'delete_risk_response' response.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                                    </td>
+                                </tr>
+                                <tr class="collapse" id="response-{{ response.id }}">
+                                    <td colspan="4" class="bg-light">
+                                        <div class="p-3">
+                                            <h6>Description</h6>
+                                            <p>{{ response.description|linebreaks }}</p>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <p><strong>Responsible:</strong> {{ response.responsible_person }}</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p><strong>Target Date:</strong> {{ response.target_date|default:"Not specified" }}</p>
+                                                </div>
+                                            </div>
+                                            {% if response.cost_estimate %}
+                                            <p><strong>Cost Estimate:</strong> {{ response.cost_estimate }}</p>
+                                            {% endif %}
+                                            <p class="text-muted small">Created by: {{ response.created_by.username }} on {{ response.created_at|date:"M d, Y" }}</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p>No responses have been added for this risk yet.</p>
+                        <a href="{% url 'add_risk_response' risk.id %}" class="btn btn-primary">Add Response</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk History -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="card-title mb-0">Risk History</h5>
+        </div>
+        <div class="card-body">
+            {% if history %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Changed By</th>
+                            <th>Status</th>
+                            <th>Likelihood</th>
+                            <th>Impact</th>
+                            <th>Score</th>
+                            <th>Comment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history %}
+                        <tr>
+                            <td>{{ entry.changed_at|date:"M d, Y H:i" }}</td>
+                            <td>{{ entry.changed_by.username }}</td>
+                            <td>{{ entry.status }}</td>
+                            <td>{{ entry.likelihood }}</td>
+                            <td>{{ entry.impact }}</td>
+                            <td>{{ entry.likelihood|multiply:entry.impact }}</td>
+                            <td>{{ entry.change_comment }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <p>No history records available for this risk.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

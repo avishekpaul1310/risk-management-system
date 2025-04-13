@@ -1,0 +1,72 @@
+{% extends 'risks/base.html' %}
+
+{% block title %}Edit Profile | Project Risk Manager{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'profile' %}">Profile</a></li>
+            <li class="breadcrumb-item active">Edit Profile</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Edit Profile</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.role.id_for_label }}" class="form-label">Role</label>
+                            <select name="{{ form.role.name }}" id="{{ form.role.id_for_label }}" class="form-select {% if form.role.errors %}is-invalid{% endif %}">
+                                {% for value, text in form.fields.role.choices %}
+                                <option value="{{ value }}" {% if form.role.value == value %}selected{% endif %}>{{ text }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.role.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.role.errors }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <ul>
+                                    <li><strong>Viewer</strong>: Can only view risks and projects</li>
+                                    <li><strong>Contributor</strong>: Can view and add risks and responses</li>
+                                    <li><strong>Manager</strong>: Can manage risks, responses and projects</li>
+                                    <li><strong>Administrator</strong>: Full access to all features</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.projects.id_for_label }}" class="form-label">Assigned Projects</label>
+                            <select name="{{ form.projects.name }}" id="{{ form.projects.id_for_label }}" class="form-select {% if form.projects.errors %}is-invalid{% endif %}" multiple size="5">
+                                {% for choice in form.fields.projects.choices %}
+                                <option value="{{ choice.0 }}" {% if choice.0 in form.projects.value %}selected{% endif %}>{{ choice.1 }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.projects.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.projects.errors }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Hold Ctrl (or Cmd on Mac) to select multiple projects</div>
+                        </div>
+                        
+                        <div class="text-end">
+                            <a href="{% url 'profile' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Update Profile</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

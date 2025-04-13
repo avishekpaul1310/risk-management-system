@@ -1,13 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Project, Risk, Category
-from .forms import ProjectForm, RiskForm, CategoryForm
+from .models import Project, Risk, Category, RiskHistory, RiskResponse, UserProfile
+from .forms import (ProjectForm, RiskForm, CategoryForm, RiskHistoryForm, 
+                    RiskResponseForm, UserProfileForm, RiskEditForm)
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 import csv
 from django.http import HttpResponse
 from datetime import datetime
+from .notifications import send_high_risk_notification, send_risk_status_change_notification
+from django.urls import reverse
 
 # User registration view
 def signup(request):
@@ -146,12 +149,27 @@ def add_risk(request, project_id):
         if form.is_valid():
             risk = form.save(commit=False)
             risk.project = project
-            
-            # Add the user if authenticated
-            if request.user.is_authenticated:
-                risk.created_by = request.user
-                
             risk.save()
+            
+            # Create initial history record
+            history = RiskHistory(
+                risk=risk,
+                title=risk.title,
+                description=risk.description,
+                category_name=risk.category.name if risk.category else '',
+                likelihood=risk.likelihood,
+                impact=risk.impact,
+                status=risk.status,
+                owner=risk.owner,
+                changed_by=request.user,
+                change_comment="Initial risk creation"
+            )
+            history.save()
+            
+            # Send notification for high risks
+            if risk.risk_level == 'High':
+                send_high_risk_notification(risk)
+                
             messages.success(request, f'Risk "{risk.title}" added successfully!')
             return redirect('project_detail', project_id=project.id)
     else:
@@ -161,15 +179,47 @@ def add_risk(request, project_id):
 @login_required
 def edit_risk(request, risk_id):
     risk = get_object_or_404(Risk, id=risk_id)
+    old_status = risk.status
+    old_category_name = risk.category.name if risk.category else ''
+    
     if request.method == 'POST':
-        form = RiskForm(request.POST, instance=risk)
+        form = RiskEditForm(request.POST, instance=risk)
         if form.is_valid():
-            form.save()
+            # Save the risk with its updated values
+            updated_risk = form.save()
+            
+            # Create a history record
+            history = RiskHistory(
+                risk=risk,
+                title=risk.title,
+                description=risk.description,
+                category_name=risk.category.name if risk.category else '',
+                likelihood=risk.likelihood,
+                impact=risk.impact,
+                status=risk.status,
+                owner=risk.owner,
+                changed_by=request.user,
+                change_comment=form.cleaned_data.get('change_comment', '')
+            )
+            history.save()
+            
+            # Send notification if status changed
+            if risk.status != old_status:
+                send_risk_status_change_notification(risk, old_status)
+                
             messages.success(request, f'Risk "{risk.title}" updated successfully!')
             return redirect('project_detail', project_id=risk.project.id)
     else:
-        form = RiskForm(instance=risk)
-    return render(request, 'risks/edit_risk.html', {'form': form, 'risk': risk})
+        form = RiskEditForm(instance=risk)
+    
+    # Get risk history for display
+    risk_history = risk.history.all()
+    
+    return render(request, 'risks/edit_risk.html', {
+        'form': form, 
+        'risk': risk,
+        'history': risk_history
+    })
 
 @login_required
 def delete_risk(request, risk_id):
@@ -216,6 +266,21 @@ def dashboard(request):
     # High priority risks
     high_priority_risks = risks.filter(status='Open').order_by('-likelihood', '-impact')[:10]
     
+    # Prepare data for risk matrix (heat map)
+    risk_matrix = [
+        [0, 0, 0],  # Low likelihood: [low impact, med impact, high impact]
+        [0, 0, 0],  # Med likelihood: [low impact, med impact, high impact]
+        [0, 0, 0],  # High likelihood: [low impact, med impact, high impact]
+    ]
+    
+    # Count risks for each cell in the matrix
+    for risk in risks:
+        if risk.likelihood > 0 and risk.impact > 0:  # Ensure valid values
+            li = risk.likelihood - 1  # 0-based index (likelihood is 1, 2, or 3)
+            im = risk.impact - 1      # 0-based index (impact is 1, 2, or 3)
+            if 0 <= li < 3 and 0 <= im < 3:  # Ensure within valid range
+                risk_matrix[li][im] += 1
+    
     # Prepare data for JSON serialization
     severity_data = {
         'high': high_risks,
@@ -228,7 +293,27 @@ def dashboard(request):
         'values': list(risks_by_category.values())
     }
     
+    status_data = {
+        'labels': ['Open', 'Mitigated', 'Closed'],
+        'values': [open_risks, mitigated_risks, closed_risks]
+    }
+    
+    # Convert risk matrix to the format expected by Chart.js matrix plugin
+    risk_matrix_data = []
+    for x in range(3):  # Likelihood (0=Low, 1=Medium, 2=High)
+        for y in range(3):  # Impact (0=Low, 1=Medium, 2=High)
+            # Calculate risk score (likelihood+1 * impact+1)
+            score = (x + 1) * (y + 1)
+            count = risk_matrix[x][y]
+            risk_matrix_data.append({
+                'x': x,
+                'y': y,
+                'v': score,
+                'count': count
+            })
+    
     context = {
+        'projects': projects,
         'project_count': project_count,
         'risk_count': risk_count,
         'high_risks': high_risks,
@@ -241,7 +326,9 @@ def dashboard(request):
         'recent_risks': recent_risks,
         'high_priority_risks': high_priority_risks,
         'severity_data': severity_data,
-        'category_data': category_data
+        'category_data': category_data,
+        'status_data': status_data,
+        'risk_matrix_data': risk_matrix_data
     }
     
     return render(request, 'risks/dashboard.html', context)
@@ -274,3 +361,105 @@ def export_risks_csv(request):
         ])
     
     return response
+
+@login_required
+def risk_detail(request, risk_id):
+    """View for detailed risk information including history and responses"""
+    risk = get_object_or_404(Risk, id=risk_id)
+    history = risk.history.all()
+    responses = risk.responses.all().order_by('-updated_at')
+    
+    context = {
+        'risk': risk,
+        'history': history,
+        'responses': responses,
+    }
+    return render(request, 'risks/risk_detail.html', context)
+
+@login_required
+def add_risk_response(request, risk_id):
+    """Add a new response to a risk"""
+    risk = get_object_or_404(Risk, id=risk_id)
+    
+    if request.method == 'POST':
+        form = RiskResponseForm(request.POST)
+        if form.is_valid():
+            response = form.save(commit=False)
+            response.risk = risk
+            response.created_by = request.user
+            response.save()
+            
+            messages.success(request, f'Response added successfully to risk "{risk.title}"')
+            return redirect('risk_detail', risk_id=risk.id)
+    else:
+        form = RiskResponseForm()
+    
+    return render(request, 'risks/add_risk_response.html', {
+        'form': form,
+        'risk': risk
+    })
+
+@login_required
+def edit_risk_response(request, response_id):
+    """Edit an existing risk response"""
+    response = get_object_or_404(RiskResponse, id=response_id)
+    risk = response.risk
+    
+    # Check if the user has permission to edit the response
+    user_profile = request.user.profile
+    if not user_profile.is_contributor and response.created_by != request.user:
+        messages.error(request, "You don't have permission to edit this response.")
+        return redirect('risk_detail', risk_id=risk.id)
+    
+    if request.method == 'POST':
+        form = RiskResponseForm(request.POST, instance=response)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Response updated successfully')
+            return redirect('risk_detail', risk_id=risk.id)
+    else:
+        form = RiskResponseForm(instance=response)
+    
+    return render(request, 'risks/edit_risk_response.html', {
+        'form': form,
+        'response': response,
+        'risk': risk
+    })
+
+@login_required
+def delete_risk_response(request, response_id):
+    """Delete a risk response"""
+    response = get_object_or_404(RiskResponse, id=response_id)
+    risk = response.risk
+    
+    # Check if the user has permission to delete the response
+    user_profile = request.user.profile
+    if not user_profile.is_manager and response.created_by != request.user:
+        messages.error(request, "You don't have permission to delete this response.")
+        return redirect('risk_detail', risk_id=risk.id)
+    
+    if request.method == 'POST':
+        response.delete()
+        messages.success(request, 'Response deleted successfully')
+        return redirect('risk_detail', risk_id=risk.id)
+    
+    return render(request, 'risks/delete_risk_response.html', {
+        'response': response,
+        'risk': risk
+    })
+
+@login_required
+def edit_user_profile(request):
+    """Edit the current user's profile"""
+    user_profile = request.user.profile
+    
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, instance=user_profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile has been updated successfully')
+            return redirect('profile')
+    else:
+        form = UserProfileForm(instance=user_profile)
+    
+    return render(request, 'risks/edit_profile.html', {'form': form})

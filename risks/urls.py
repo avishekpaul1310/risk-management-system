@@ -21,4 +21,13 @@ urlpatterns = [
     path('accounts/profile/', views.profile, name='profile'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('reports/export-csv/', views.export_risks_csv, name='export_risks_csv'),
+    
+    # Risk detail and responses
+    path('risk/<int:risk_id>/detail/', views.risk_detail, name='risk_detail'),
+    path('risk/<int:risk_id>/response/add/', views.add_risk_response, name='add_risk_response'),
+    path('response/<int:response_id>/edit/', views.edit_risk_response, name='edit_risk_response'),
+    path('response/<int:response_id>/delete/', views.delete_risk_response, name='delete_risk_response'),
+    
+    # User profile management
+    path('profile/edit/', views.edit_user_profile, name='edit_user_profile'),
 ]
