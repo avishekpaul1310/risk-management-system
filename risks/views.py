@@ -97,6 +97,31 @@ def edit_project(request, project_id):
     return render(request, 'risks/edit_project.html', {'form': form, 'project': project})
 
 @login_required
+def delete_project(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    
+    # Check if the user has the permissions to delete the project
+    try:
+        user_profile = request.user.profile
+        is_manager = user_profile.is_manager
+    except:
+        # If user doesn't have a profile yet, create one with limited permissions
+        UserProfile.objects.create(user=request.user, role='contributor')
+        is_manager = False
+    
+    if not is_manager:
+        messages.error(request, "You don't have permission to delete projects.")
+        return redirect('project_detail', project_id=project.id)
+    
+    if request.method == 'POST':
+        project_name = project.name
+        project.delete()
+        messages.success(request, f'Project "{project_name}" deleted successfully!')
+        return redirect('home')
+    
+    return render(request, 'risks/delete_project.html', {'project': project})
+
+@login_required
 def categories(request):
     categories = Category.objects.all().order_by('name')
     return render(request, 'risks/categories.html', {'categories': categories})

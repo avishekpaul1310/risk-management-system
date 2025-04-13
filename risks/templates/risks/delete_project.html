@@ -1,0 +1,51 @@
+{% extends 'risks/base.html' %}
+
+{% block title %}Delete Project - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'project_detail' project.id %}">{{ project.name }}</a></li>
+            <li class="breadcrumb-item active">Delete Project</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Delete Project: {{ project.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone. Deleting this project will also delete all associated risks, responses, and history records.
+                    </div>
+                    
+                    <p>Are you sure you want to delete the project "{{ project.name }}"?</p>
+                    
+                    <p><strong>Project details:</strong></p>
+                    <ul>
+                        <li><strong>Name:</strong> {{ project.name }}</li>
+                        <li><strong>Description:</strong> {{ project.description|default:"No description provided" }}</li>
+                        <li><strong>Created on:</strong> {{ project.created_at|date:"M d, Y" }}</li>
+                        <li><strong>Associated risks:</strong> {{ project.risks.count }}</li>
+                    </ul>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="text-end mt-4">
+                            <a href="{% url 'project_detail' project.id %}" class="btn btn-outline-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i> Delete Project
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

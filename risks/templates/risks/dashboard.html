@@ -419,19 +419,21 @@
                 },
                 layout: {
                     padding: {
-                        top: 10,
-                        right: 10,
-                        bottom: 30,
-                        left: 10
+                        top: 20,
+                        right: 20,
+                        bottom: 50, // Increased padding at the bottom for X-axis labels
+                        left: 20
                     }
                 },
                 scales: {
                     x: {
+                        offset: true,  // This helps separate the axis from the chart area
                         ticks: {
                             callback: (v) => ['Low', 'Medium', 'High'][v],
-                            padding: 10,
+                            padding: 15,   // Increased padding for X-axis ticks
                             font: {
-                                size: 12
+                                size: 12,
+                                weight: 'bold'
                             }
                         },
                         grid: {
@@ -442,7 +444,7 @@
                             display: true,
                             text: 'Likelihood',
                             padding: {
-                                top: 20,
+                                top: 25,   // Increased padding to move title further from ticks
                                 bottom: 10
                             },
                             font: {
@@ -452,11 +454,13 @@
                         }
                     },
                     y: {
+                        offset: true,  // This helps separate the axis from the chart area
                         ticks: {
                             callback: (v) => ['Low', 'Medium', 'High'][v],
                             padding: 10,
                             font: {
-                                size: 12
+                                size: 12,
+                                weight: 'bold'
                             }
                         },
                         grid: {

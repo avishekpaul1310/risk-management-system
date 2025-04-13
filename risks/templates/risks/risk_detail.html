@@ -119,7 +119,7 @@
                                                 </div>
                                             </div>
                                             {% if response.cost_estimate %}
-                                            <p><strong>Cost Estimate:</strong> {{ response.cost_estimate }}</p>
+                                            <p><strong>Cost Estimate:</strong> {{ response.get_currency_symbol }} {{ response.cost_estimate }} ({{ response.get_currency_display }})</p>
                                             {% endif %}
                                             <p class="text-muted small">Created by: {{ response.created_by.username }} on {{ response.created_at|date:"M d, Y" }}</p>
                                         </div>

@@ -22,6 +22,7 @@
     </div>
     <div class="col-auto">
         <a href="{% url 'edit_project' project.id %}" class="btn btn-outline-secondary">Edit Project</a>
+        <a href="{% url 'delete_project' project.id %}" class="btn btn-outline-danger">Delete Project</a>
         <a href="{% url 'add_risk' project.id %}" class="btn btn-primary">Add Risk</a>
     </div>
 </div>
