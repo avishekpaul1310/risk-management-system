@@ -384,6 +384,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     tooltip: {
                         callbacks: {
@@ -407,23 +408,63 @@
                         display: false
                     }
                 },
+                layout: {
+                    padding: {
+                        top: 10,
+                        right: 10,
+                        bottom: 30,
+                        left: 10
+                    }
+                },
                 scales: {
                     x: {
                         ticks: {
                             callback: (v) => ['Low', 'Medium', 'High'][v],
+                            padding: 10,
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            display: false,
+                            drawBorder: false
                         },
                         title: {
                             display: true,
-                            text: 'Likelihood'
+                            text: 'Likelihood',
+                            padding: {
+                                top: 20,
+                                bottom: 10
+                            },
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
                         }
                     },
                     y: {
                         ticks: {
                             callback: (v) => ['Low', 'Medium', 'High'][v],
+                            padding: 10,
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            display: false,
+                            drawBorder: false
                         },
                         title: {
                             display: true,
-                            text: 'Impact'
+                            text: 'Impact',
+                            padding: {
+                                top: 0,
+                                bottom: 10
+                            },
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
                         },
                         reverse: true
                     }
