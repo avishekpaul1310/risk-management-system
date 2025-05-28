@@ -28,7 +28,9 @@ urlpatterns = [
     path('risk/<int:risk_id>/response/add/', views.add_risk_response, name='add_risk_response'),
     path('response/<int:response_id>/edit/', views.edit_risk_response, name='edit_risk_response'),
     path('response/<int:response_id>/delete/', views.delete_risk_response, name='delete_risk_response'),
-    
-    # User profile management
+      # User profile management
     path('profile/edit/', views.edit_user_profile, name='edit_user_profile'),
+    
+    # Monte Carlo simulation
+    path('project/<int:project_id>/monte-carlo/', views.monte_carlo_simulation, name='monte_carlo_simulation'),
 ]

@@ -54,6 +54,31 @@ class Risk(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='risks')
     likelihood = models.IntegerField(choices=LIKELIHOOD_CHOICES, default=1)
     impact = models.IntegerField(choices=IMPACT_CHOICES, default=1)
+    
+    # Monte Carlo Simulation fields
+    likelihood_percentage = models.IntegerField(
+        default=10, 
+        help_text="Probability of risk occurring (1-100%)"
+    )
+    optimistic_cost_impact = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=0,
+        help_text="Best-case cost impact if risk occurs"
+    )
+    most_likely_cost_impact = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=0,
+        help_text="Most probable cost impact if risk occurs"
+    )
+    pessimistic_cost_impact = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=0,
+        help_text="Worst-case cost impact if risk occurs"
+    )
+    
     owner = models.CharField(max_length=100, blank=True)  # Risk Owner
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Open')
     created_at = models.DateTimeField(auto_now_add=True)

@@ -109,7 +109,96 @@
                                 {{ form.status.errors }}
                             </div>
                             {% endif %}
+                        </div>                    </div>
+                    
+                    <!-- Monte Carlo Simulation Fields -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Monte Carlo Simulation Parameters</h6>
+                            <small class="text-muted">These values are used for cost risk simulation</small>
                         </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.likelihood_percentage.id_for_label }}" class="form-label">Likelihood Percentage</label>
+                                    <div class="input-group">
+                                        <input type="number" name="{{ form.likelihood_percentage.name }}" id="{{ form.likelihood_percentage.id_for_label }}" 
+                                               class="form-control {% if form.likelihood_percentage.errors %}is-invalid{% endif %}" 
+                                               value="{{ form.likelihood_percentage.value|default:'10' }}" min="1" max="100" step="1">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    <small class="form-text text-muted">Probability of this risk occurring (1-100%)</small>
+                                    {% if form.likelihood_percentage.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.likelihood_percentage.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="{{ form.optimistic_cost_impact.id_for_label }}" class="form-label">Optimistic Cost Impact</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" name="{{ form.optimistic_cost_impact.name }}" id="{{ form.optimistic_cost_impact.id_for_label }}" 
+                                               class="form-control {% if form.optimistic_cost_impact.errors %}is-invalid{% endif %}" 
+                                               value="{{ form.optimistic_cost_impact.value|default:'0' }}" min="0" step="0.01">
+                                    </div>
+                                    <small class="form-text text-muted">Best-case cost if risk occurs</small>
+                                    {% if form.optimistic_cost_impact.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.optimistic_cost_impact.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form.most_likely_cost_impact.id_for_label }}" class="form-label">Most Likely Cost Impact</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" name="{{ form.most_likely_cost_impact.name }}" id="{{ form.most_likely_cost_impact.id_for_label }}" 
+                                               class="form-control {% if form.most_likely_cost_impact.errors %}is-invalid{% endif %}" 
+                                               value="{{ form.most_likely_cost_impact.value|default:'0' }}" min="0" step="0.01">
+                                    </div>
+                                    <small class="form-text text-muted">Most probable cost if risk occurs</small>
+                                    {% if form.most_likely_cost_impact.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.most_likely_cost_impact.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form.pessimistic_cost_impact.id_for_label }}" class="form-label">Pessimistic Cost Impact</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" name="{{ form.pessimistic_cost_impact.name }}" id="{{ form.pessimistic_cost_impact.id_for_label }}" 
+                                               class="form-control {% if form.pessimistic_cost_impact.errors %}is-invalid{% endif %}" 
+                                               value="{{ form.pessimistic_cost_impact.value|default:'0' }}" min="0" step="0.01">
+                                    </div>
+                                    <small class="form-text text-muted">Worst-case cost if risk occurs</small>
+                                    {% if form.pessimistic_cost_impact.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.pessimistic_cost_impact.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <small><strong>Note:</strong> Optimistic ≤ Most Likely ≤ Pessimistic. These values represent the potential cost impact if this risk actually occurs.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Change Comment Section -->
+                    <div class="mb-3">
+                        <label for="{{ form.change_comment.id_for_label }}" class="form-label">Change Comment</label>
+                        <textarea name="{{ form.change_comment.name }}" id="{{ form.change_comment.id_for_label }}" class="form-control {% if form.change_comment.errors %}is-invalid{% endif %}" rows="2" placeholder="Describe what changed and why">{{ form.change_comment.value|default:'' }}</textarea>
+                        {% if form.change_comment.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.change_comment.errors }}
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <div class="text-end">

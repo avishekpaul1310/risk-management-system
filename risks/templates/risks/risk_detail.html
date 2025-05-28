@@ -65,12 +65,46 @@
                         <tr>
                             <th>Created</th>
                             <td>{{ risk.created_at|date:"M d, Y H:i" }}</td>
-                        </tr>
-                        <tr>
+                        </tr>                        <tr>
                             <th>Last Updated</th>
                             <td>{{ risk.updated_at|date:"M d, Y H:i" }}</td>
                         </tr>
                     </table>
+                </div>
+            </div>
+            
+            <!-- Monte Carlo Parameters Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Monte Carlo Simulation Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th style="width: 50%">Likelihood Percentage</th>
+                            <td>{{ risk.likelihood_percentage }}%</td>
+                        </tr>
+                        <tr>
+                            <th>Optimistic Cost Impact</th>
+                            <td>${{ risk.optimistic_cost_impact|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Most Likely Cost Impact</th>
+                            <td>${{ risk.most_likely_cost_impact|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Pessimistic Cost Impact</th>
+                            <td>${{ risk.pessimistic_cost_impact|floatformat:2 }}</td>
+                        </tr>
+                    </table>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            These values are used in Monte Carlo simulations to estimate potential cost impacts.
+                            <a href="{% url 'monte_carlo_simulation' risk.project.id %}" class="btn btn-sm btn-outline-info ms-2">
+                                Run Project Simulation
+                            </a>
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>

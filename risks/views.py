@@ -7,10 +7,12 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 import csv
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from datetime import datetime
 from .notifications import send_high_risk_notification, send_risk_status_change_notification
 from django.urls import reverse
+from .monte_carlo import run_monte_carlo_simulation, format_currency
+import json
 
 # User registration view
 def signup(request):
@@ -502,3 +504,42 @@ def edit_user_profile(request):
         form = UserProfileForm(instance=user_profile)
     
     return render(request, 'risks/edit_profile.html', {'form': form})
+
+@login_required
+def monte_carlo_simulation(request, project_id):
+    """Run Monte Carlo simulation for project risk costs"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if request.method == 'POST':
+        # Get number of simulations from request (default to 5000)
+        num_simulations = int(request.POST.get('num_simulations', 5000))
+        
+        # Validate simulation count
+        if num_simulations < 100:
+            num_simulations = 100
+        elif num_simulations > 10000:
+            num_simulations = 10000
+        
+        # Run the simulation
+        results = run_monte_carlo_simulation(project.risks, num_simulations)
+        
+        # Format results for display
+        formatted_stats = {}
+        for key, value in results['statistics'].items():
+            formatted_stats[key] = format_currency(value)
+        
+        # Return JSON response for AJAX
+        return JsonResponse({
+            'success': True,
+            'results': results,
+            'formatted_stats': formatted_stats,
+            'project_name': project.name
+        })
+    
+    # For GET request, show the simulation page
+    active_risks = project.risks.filter(status='Open')
+    return render(request, 'risks/monte_carlo_simulation.html', {
+        'project': project,
+        'active_risks': active_risks,
+        'total_active_risks': active_risks.count()
+    })

@@ -19,10 +19,12 @@
         <h1>{{ project.name }}</h1>
         <p>{{ project.description }}</p>
         <p class="text-muted">Created: {{ project.created_at|date:"F d, Y" }}</p>
-    </div>
-    <div class="col-auto">
+    </div>    <div class="col-auto">
         <a href="{% url 'edit_project' project.id %}" class="btn btn-outline-secondary">Edit Project</a>
         <a href="{% url 'delete_project' project.id %}" class="btn btn-outline-danger">Delete Project</a>
+        <a href="{% url 'monte_carlo_simulation' project.id %}" class="btn btn-info">
+            <i class="fas fa-chart-line"></i> Monte Carlo Simulation
+        </a>
         <a href="{% url 'add_risk' project.id %}" class="btn btn-primary">Add Risk</a>
     </div>
 </div>

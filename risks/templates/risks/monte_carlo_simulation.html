@@ -1,0 +1,269 @@
+{% extends 'risks/base.html' %}
+
+{% block title %}Monte Carlo Risk Simulation - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2>Monte Carlo Risk Cost Simulation</h2>
+            <p class="text-muted">Project: <strong>{{ project.name }}</strong></p>
+            
+            {% if total_active_risks == 0 %}
+                <div class="alert alert-warning">
+                    <h5>No Active Risks Found</h5>
+                    <p>This project has no open risks to simulate. Add some risks to the project first.</p>
+                    <a href="{% url 'add_risk' project.id %}" class="btn btn-primary">Add Risk</a>
+                </div>
+            {% else %}
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Simulation Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="simulation-form">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label for="num_simulations" class="form-label">Number of Simulations</label>
+                                        <select class="form-select" id="num_simulations" name="num_simulations">
+                                            <option value="1000">1,000 (Fast)</option>
+                                            <option value="5000" selected>5,000 (Recommended)</option>
+                                            <option value="10000">10,000 (High Precision)</option>
+                                        </select>
+                                        <div class="form-text">More simulations = more accurate results but slower processing</div>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary w-100" id="run-simulation">
+                                        <span class="spinner-border spinner-border-sm d-none" id="loading-spinner"></span>
+                                        Run Simulation
+                                    </button>
+                                </form>
+                                
+                                <div class="mt-3">
+                                    <h6>Active Risks: {{ total_active_risks }}</h6>
+                                    <small class="text-muted">Only "Open" status risks are included in the simulation</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Results Summary -->
+                        <div class="card mt-3 d-none" id="results-summary">
+                            <div class="card-header">
+                                <h5>Simulation Results</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Mean Cost:</strong></td>
+                                        <td id="mean-cost">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Median Cost:</strong></td>
+                                        <td id="median-cost">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Min Cost:</strong></td>
+                                        <td id="min-cost">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Max Cost:</strong></td>
+                                        <td id="max-cost">-</td>
+                                    </tr>
+                                    <tr class="table-warning">
+                                        <td><strong>90th Percentile:</strong></td>
+                                        <td id="p90-cost">-</td>
+                                    </tr>
+                                    <tr class="table-danger">
+                                        <td><strong>95th Percentile:</strong></td>
+                                        <td id="p95-cost">-</td>
+                                    </tr>
+                                </table>
+                                <div class="alert alert-info mt-3">
+                                    <strong>90th Percentile:</strong> There's a 90% chance the total risk cost will be less than or equal to this amount.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <!-- Chart Container -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Cost Distribution Histogram</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="no-results" class="text-center text-muted py-5">
+                                    <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                                    <p>Run a simulation to see the cost distribution chart</p>
+                                </div>
+                                <canvas id="histogram-chart" class="d-none" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Risk List -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5>Active Risks in Simulation</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Risk</th>
+                                                <th>Likelihood %</th>
+                                                <th>Optimistic Cost</th>
+                                                <th>Most Likely Cost</th>
+                                                <th>Pessimistic Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for risk in active_risks %}
+                                            <tr>
+                                                <td>
+                                                    <a href="{% url 'risk_detail' risk.id %}">{{ risk.title }}</a>
+                                                </td>
+                                                <td>{{ risk.likelihood_percentage }}%</td>
+                                                <td>${{ risk.optimistic_cost_impact|floatformat:2 }}</td>
+                                                <td>${{ risk.most_likely_cost_impact|floatformat:2 }}</td>
+                                                <td>${{ risk.pessimistic_cost_impact|floatformat:2 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="mt-3">
+                <a href="{% url 'project_detail' project.id %}" class="btn btn-secondary">Back to Project</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let chart = null;
+
+document.getElementById('simulation-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const button = document.getElementById('run-simulation');
+    const spinner = document.getElementById('loading-spinner');
+    const formData = new FormData(this);
+    
+    // Show loading state
+    button.disabled = true;
+    spinner.classList.remove('d-none');
+    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Running...';
+    
+    fetch('', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayResults(data);
+        } else {
+            alert('Error running simulation');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error running simulation');
+    })
+    .finally(() => {
+        // Reset button state
+        button.disabled = false;
+        spinner.classList.add('d-none');
+        button.innerHTML = 'Run Simulation';
+    });
+});
+
+function displayResults(data) {
+    const results = data.results;
+    const stats = data.formatted_stats;
+    
+    // Show results summary
+    document.getElementById('results-summary').classList.remove('d-none');
+    
+    // Update statistics
+    document.getElementById('mean-cost').textContent = stats.mean;
+    document.getElementById('median-cost').textContent = stats.median;
+    document.getElementById('min-cost').textContent = stats.min_cost;
+    document.getElementById('max-cost').textContent = stats.max_cost;
+    document.getElementById('p90-cost').textContent = stats.p90;
+    document.getElementById('p95-cost').textContent = stats.p95;
+    
+    // Create histogram
+    createHistogram(results.histogram_data);
+}
+
+function createHistogram(histogramData) {
+    const ctx = document.getElementById('histogram-chart').getContext('2d');
+    
+    // Hide no-results message and show chart
+    document.getElementById('no-results').classList.add('d-none');
+    document.getElementById('histogram-chart').classList.remove('d-none');
+    
+    // Destroy existing chart if it exists
+    if (chart) {
+        chart.destroy();
+    }
+    
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: histogramData.bins.map(bin => `$${bin.toLocaleString()}`),
+            datasets: [{
+                label: 'Frequency',
+                data: histogramData.frequencies,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Distribution of Total Risk Costs'
+                },
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Total Risk Cost'
+                    },
+                    ticks: {
+                        maxRotation: 45
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Frequency'
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}
