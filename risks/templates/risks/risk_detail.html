@@ -109,11 +109,13 @@
             </div>
         </div>
 
-        <div class="col-md-6">
-            <!-- Risk Responses -->
+        <div class="col-md-6">            <!-- Risk Responses -->
             <div class="card mb-4">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Risk Responses</h5>
+                    <button id="suggestResponsesBtn" class="btn btn-sm btn-light">
+                        <i class="bi bi-lightbulb"></i> AI Suggestions
+                    </button>
                 </div>
                 <div class="card-body">
                     {% if responses %}
@@ -208,8 +210,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
-            {% else %}
+            </div>            {% else %}
             <div class="text-center py-4">
                 <p>No history records available for this risk.</p>
             </div>
@@ -217,4 +218,128 @@
         </div>
     </div>
 </div>
+
+<!-- AI Response Suggestions Modal -->
+<div class="modal fade" id="responsesSuggestionsModal" tabindex="-1" aria-labelledby="responsesSuggestionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="responsesSuggestionsModalLabel">AI-Suggested Risk Responses</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="suggestionsLoading" class="text-center my-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Generating AI suggestions...</p>
+                </div>
+                
+                <div id="suggestionsContent" class="d-none">
+                    <!-- Suggestions will be inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="{% static 'risks/js/ai_features.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const suggestBtn = document.getElementById('suggestResponsesBtn');
+        const suggestionsModal = new bootstrap.Modal(document.getElementById('responsesSuggestionsModal'));
+        const loadingEl = document.getElementById('suggestionsLoading');
+        const contentEl = document.getElementById('suggestionsContent');
+        
+        suggestBtn.addEventListener('click', function() {
+            // Show modal with loading state
+            loadingEl.classList.remove('d-none');
+            contentEl.classList.add('d-none');
+            suggestionsModal.show();
+              // Generate suggestions
+            generateRiskResponseSuggestions("{{ risk.id }}", function(error, result) {
+                loadingEl.classList.add('d-none');
+                
+                if (error) {
+                    contentEl.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                    contentEl.classList.remove('d-none');
+                    return;
+                }
+                
+                // Create suggestions UI
+                const suggestions = result.suggestions;
+                let html = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill"></i> AI-generated response strategies for <strong>${result.risk_title}</strong>
+                    </div>
+                `;
+                
+                html += '<div class="row">';
+                
+                // Process each suggestion
+                suggestions.forEach(function(suggestion, index) {
+                    // Determine badge color based on complexity
+                    let complexityColor = 'bg-success';
+                    if (suggestion.implementation_complexity === 'Medium') {
+                        complexityColor = 'bg-warning';
+                    } else if (suggestion.implementation_complexity === 'High') {
+                        complexityColor = 'bg-danger';
+                    }
+                    
+                    // Determine type icon
+                    let typeIcon = 'bi-shield';
+                    if (suggestion.type === 'Transfer') {
+                        typeIcon = 'bi-arrow-left-right';
+                    } else if (suggestion.type === 'Avoid') {
+                        typeIcon = 'bi-x-octagon';
+                    } else if (suggestion.type === 'Accept') {
+                        typeIcon = 'bi-check-circle';
+                    }
+                    
+                    html += `
+                    <div class="col-md-12 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="bi ${typeIcon} me-2"></i>
+                                        ${suggestion.strategy}
+                                    </h6>
+                                    <span class="badge ${complexityColor}">${suggestion.implementation_complexity} Complexity</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">${suggestion.action_plan}</p>
+                                <div class="d-flex justify-content-between">
+                                    <span>
+                                        <i class="bi bi-bullseye"></i> Effectiveness: 
+                                        <strong>${suggestion.estimated_effectiveness}%</strong>
+                                    </span>
+                                    <span>
+                                        <i class="bi bi-tools"></i> ${suggestion.resources_required}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light">
+                                <a href="{% url 'add_risk_response' risk.id %}?suggested_response=${encodeURIComponent(suggestion.action_plan)}&suggested_type=${encodeURIComponent(suggestion.type)}" class="btn btn-sm btn-outline-primary">
+                                    Use This Response
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                });
+                
+                html += '</div>';
+                contentEl.innerHTML = html;
+                contentEl.classList.remove('d-none');
+            });
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %}

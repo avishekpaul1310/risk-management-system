@@ -29,6 +29,7 @@ The **Project Risk Management System** is a sophisticated web application design
 
 - **Intuitive Interface**: Clean, responsive design that works on all devices
 - **Statistical Analysis**: Advanced Monte Carlo simulations for probabilistic risk assessment
+- **AI-Powered Features**: Smart risk descriptions, pattern analysis, and intelligent search with Google Gemini
 - **Real-time Visualizations**: Interactive charts and dashboards
 - **Professional Workflow**: Complete risk lifecycle management from identification to closure
 - **Data-Driven Decisions**: Transform uncertainty into actionable insights
@@ -60,6 +61,15 @@ Our flagship feature that sets this system apart:
 - **Team Collaboration**: Multi-user project access
 - **Audit Trail**: Complete history of risk changes
 - **Notification System**: Alerts for high-risk items
+
+### 🤖 **AI-Powered Features** ⭐
+Our powerful AI capabilities using Google Gemini 1.5 Flash:
+
+- **Enhanced Risk Descriptions**: AI helps create clearer, more specific risk statements
+- **Smart Risk Search**: Natural language search across your risk register
+- **Risk Pattern Analysis**: Identify common themes and potential blind spots
+- **Response Suggestions**: AI-generated strategies for risk mitigation
+- **No Training Required**: Ready to use with zero setup or data training
 
 ### 📈 **Reporting & Analytics**
 - **Executive Dashboards**: High-level risk overview
@@ -112,6 +122,7 @@ Monte Carlo simulation is a powerful statistical technique that uses random samp
 - **JavaScript ES6+**: Interactive user experiences
 - **Chart.js**: Professional data visualizations
 - **AJAX**: Real-time updates without page refreshes
+- **Google Gemini 1.5 Flash**: AI capabilities for smart risk management
 
 ### Security & Performance
 - **CSRF Protection**: Secure form submissions
@@ -157,18 +168,30 @@ Before you begin, ensure you have the following installed:
    python manage.py migrate
    ```
 
-5. **Create Superuser (Admin Account)**
+5. **Set Up Environment for AI Features**
+   ```bash
+   # Run the environment setup script
+   python setup_env.py
+   
+   # Edit the .env file to add your Google Gemini API key
+   # Get a key from: https://makersuite.google.com/app/apikey
+   ```
+
+6. **Create Superuser (Admin Account)**
    ```bash
    python manage.py createsuperuser
    ```
 
-6. **Start the Server**
+7. **Start the Server**
    ```bash
    python manage.py runserver
    ```
 
-7. **Access the Application**
+8. **Access the Application**
    Open your browser and go to: `http://127.0.0.1:8000`
+   
+9. **Read the AI Features Guide**
+   Explore the AI capabilities in the `AI_FEATURES_GUIDE.md` file
 
 ## 📖 Usage Guide
 

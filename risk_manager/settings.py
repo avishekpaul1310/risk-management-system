@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -143,5 +147,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # DEFAULT_FROM_EMAIL = 'Risk Management System <no-reply@example.com>'
 
 # Notification settings
+
+# Google Gemini API Settings
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 RISK_NOTIFY_HIGH_RISKS = True
 RISK_NOTIFY_STATUS_CHANGE = True

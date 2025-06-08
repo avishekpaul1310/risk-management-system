@@ -23,9 +23,33 @@
         <a href="{% url 'edit_project' project.id %}" class="btn btn-outline-secondary">Edit Project</a>
         <a href="{% url 'delete_project' project.id %}" class="btn btn-outline-danger">Delete Project</a>
         <a href="{% url 'monte_carlo_simulation' project.id %}" class="btn btn-info">
-            <i class="fas fa-chart-line"></i> Monte Carlo Simulation
+            <i class="bi bi-graph-up"></i> Monte Carlo Simulation
+        </a>
+        <a href="{% url 'risk_ai_analysis' project.id %}" class="btn btn-success">
+            <i class="bi bi-cpu"></i> AI Risk Analysis
         </a>
         <a href="{% url 'add_risk' project.id %}" class="btn btn-primary">Add Risk</a>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <div class="input-group">
+                            <input type="text" id="smartSearchInput" class="form-control" 
+                                placeholder="Search risks with natural language (e.g., 'show me high priority technical risks')">
+                            <button class="btn btn-primary" type="button" id="smartSearchButton">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                        <div class="form-text">Try natural language queries like "critical server risks" or "financial risks with high impact"</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -122,9 +146,149 @@
                     <p>No risks added to this project yet.</p>
                     <a href="{% url 'add_risk' project.id %}" class="btn btn-success">Add Your First Risk</a>
                 </div>
-                {% endif %}
+                {% endif %}            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Smart Search Results Modal -->
+<div class="modal fade" id="smartSearchModal" tabindex="-1" aria-labelledby="smartSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="smartSearchModalLabel">
+                    <i class="bi bi-search"></i> Smart Search Results
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="searchLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Searching with AI...</p>
+                </div>
+                <div id="searchResults" class="d-none">
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle-fill"></i> 
+                        <span id="searchInterpretation"></span>
+                    </div>
+                    <div id="noResultsMessage" class="alert alert-warning d-none">
+                        <i class="bi bi-exclamation-circle-fill"></i> No risks match your search criteria.
+                    </div>
+                    <div id="resultsTable" class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Risk</th>
+                                    <th>Category</th>
+                                    <th>Likelihood</th>
+                                    <th>Impact</th>
+                                    <th>Score</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
+
+{% block scripts %}
+<script src="{% static 'risks/js/ai_features.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('smartSearchInput');
+        const searchButton = document.getElementById('smartSearchButton');
+        const searchModal = new bootstrap.Modal(document.getElementById('smartSearchModal'));
+        const searchLoading = document.getElementById('searchLoading');
+        const searchResults = document.getElementById('searchResults');
+        const searchInterpretation = document.getElementById('searchInterpretation');
+        const noResultsMessage = document.getElementById('noResultsMessage');
+        const resultsTable = document.getElementById('resultsTable');
+        const resultsTableBody = document.getElementById('resultsTableBody');
+        
+        searchButton.addEventListener('click', function() {
+            const query = searchInput.value.trim();
+            
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+            
+            // Reset and show modal
+            searchLoading.classList.remove('d-none');
+            searchResults.classList.add('d-none');
+            searchModal.show();
+              // Call the smart search API
+            smartRiskSearch(query, "{{ project.id }}", function(error, result) {
+                // Hide loading
+                searchLoading.classList.add('d-none');
+                searchResults.classList.remove('d-none');
+                
+                if (error) {
+                    searchInterpretation.textContent = 'Error: ' + error.message;
+                    noResultsMessage.classList.remove('d-none');
+                    resultsTable.classList.add('d-none');
+                    return;
+                }
+                
+                // Update interpretation
+                searchInterpretation.textContent = result.search_result.interpreted_intent;
+                
+                // Check if we have results
+                if (result.search_result.risks && result.search_result.risks.length > 0) {
+                    noResultsMessage.classList.add('d-none');
+                    resultsTable.classList.remove('d-none');
+                    
+                    // Clear previous results
+                    resultsTableBody.innerHTML = '';
+                    
+                    // Add new results
+                    result.search_result.risks.forEach(function(risk) {
+                        const row = document.createElement('tr');
+                        row.classList.add(
+                            risk.risk_level === 'High' ? 'risk-score-high' : 
+                            risk.risk_level === 'Medium' ? 'risk-score-medium' : 
+                            'risk-score-low'
+                        );
+                        
+                        row.innerHTML = `
+                            <td>${risk.title}</td>
+                            <td>${risk.category || 'Uncategorized'}</td>
+                            <td>${risk.likelihood}</td>
+                            <td>${risk.impact}</td>
+                            <td><strong>${risk.risk_score}</strong></td>
+                            <td>${risk.status}</td>
+                            <td>
+                                <a href="/risk/${risk.id}/" class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
+                        `;
+                        
+                        resultsTableBody.appendChild(row);
+                    });
+                } else {
+                    noResultsMessage.classList.remove('d-none');
+                    resultsTable.classList.add('d-none');
+                }
+            });
+        });
+        
+        // Enable pressing Enter to search
+        searchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                searchButton.click();
+            }
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %}

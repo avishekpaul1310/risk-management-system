@@ -1,0 +1,221 @@
+{% extends 'risks/base.html' %}
+{% load static %}
+
+{% block title %}AI Risk Analysis - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'project_detail' project.id %}">{{ project.name }}</a></li>
+                <li class="breadcrumb-item active">AI Risk Analysis</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">AI Risk Analysis for {{ project.name }}</h5>
+                <div>
+                    <button id="runAnalysisBtn" class="btn btn-light btn-sm">
+                        <i class="bi bi-cpu"></i> Run Analysis
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if total_active_risks == 0 %}
+                    <div class="alert alert-warning">
+                        This project doesn't have any active risks to analyze. 
+                        <a href="{% url 'add_risk' project.id %}">Add a risk</a> to use the AI analysis features.
+                    </div>
+                {% else %}
+                    <p class="mb-3">
+                        <strong>{{ total_active_risks }}</strong> active risks available for analysis. 
+                        Click "Run Analysis" to use AI to identify patterns and insights across all project risks.
+                    </p>
+                    
+                    <div id="loadingSpinner" class="text-center my-5 d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Analyzing project risks with AI...</p>
+                    </div>
+                    
+                    <div id="analysisResults" class="d-none">
+                        <div class="row">
+                            <div class="col-md-12 mb-4">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary bg-opacity-10">
+                                        <h5 class="card-title mb-0">Identified Risk Patterns</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="patternsContainer">
+                                            <!-- Patterns will be inserted here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-4">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success bg-opacity-10">
+                                        <h5 class="card-title mb-0">Recommended Mitigation Strategies</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="mitigationsContainer">
+                                            <!-- Mitigation strategies will be inserted here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-4">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning bg-opacity-10">
+                                        <h5 class="card-title mb-0">Potential Blind Spots</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="blindSpotsContainer">
+                                            <!-- Blind spots will be inserted here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'risks/js/ai_features.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const runButton = document.getElementById('runAnalysisBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const resultsContainer = document.getElementById('analysisResults');
+        
+        if (runButton) {
+            runButton.addEventListener('click', function() {
+                // Show loading spinner
+                loadingSpinner.classList.remove('d-none');
+                resultsContainer.classList.add('d-none');
+                runButton.disabled = true;
+                  // Run analysis
+                analyzeRiskTrends("{{ project.id }}", function(error, result) {
+                    // Hide loading spinner
+                    loadingSpinner.classList.add('d-none');
+                    runButton.disabled = false;
+                    
+                    if (error) {
+                        alert('Error analyzing risks: ' + error.message);
+                        return;
+                    }
+                    
+                    // Show results
+                    resultsContainer.classList.remove('d-none');
+                    
+                    // Populate patterns
+                    const patternsContainer = document.getElementById('patternsContainer');
+                    patternsContainer.innerHTML = '';
+                    
+                    if (result.analysis.identified_patterns && result.analysis.identified_patterns.length > 0) {
+                        const patternsList = document.createElement('div');
+                        patternsList.className = 'list-group';
+                        
+                        result.analysis.identified_patterns.forEach(function(pattern, index) {
+                            const patternItem = document.createElement('div');
+                            patternItem.className = 'list-group-item list-group-item-action flex-column align-items-start';
+                            
+                            const patternHeader = document.createElement('div');
+                            patternHeader.className = 'd-flex w-100 justify-content-between align-items-center mb-2';
+                            
+                            const patternTitle = document.createElement('h6');
+                            patternTitle.className = 'mb-0';
+                            patternTitle.textContent = pattern.pattern;
+                            
+                            const affectedBadge = document.createElement('span');
+                            affectedBadge.className = 'badge bg-primary rounded-pill';
+                            affectedBadge.textContent = `${pattern.affected_risks.length} risks`;
+                            
+                            patternHeader.appendChild(patternTitle);
+                            patternHeader.appendChild(affectedBadge);
+                            
+                            const patternDesc = document.createElement('p');
+                            patternDesc.className = 'mb-1';
+                            patternDesc.textContent = pattern.description;
+                            
+                            patternItem.appendChild(patternHeader);
+                            patternItem.appendChild(patternDesc);
+                            
+                            patternsList.appendChild(patternItem);
+                        });
+                        
+                        patternsContainer.appendChild(patternsList);
+                    } else {
+                        patternsContainer.innerHTML = '<div class="alert alert-info">No significant patterns identified.</div>';
+                    }
+                    
+                    // Populate mitigation recommendations
+                    const mitigationsContainer = document.getElementById('mitigationsContainer');
+                    mitigationsContainer.innerHTML = '';
+                    
+                    if (result.analysis.mitigation_recommendations && result.analysis.mitigation_recommendations.length > 0) {
+                        const mitigationsList = document.createElement('ol');
+                        mitigationsList.className = 'list-group list-group-numbered';
+                        
+                        result.analysis.mitigation_recommendations.forEach(function(mitigation) {
+                            const mitigationItem = document.createElement('li');
+                            mitigationItem.className = 'list-group-item d-flex justify-content-between align-items-start';
+                            
+                            const mitigationDiv = document.createElement('div');
+                            mitigationDiv.className = 'ms-2 me-auto';
+                            
+                            const mitigationText = document.createElement('div');
+                            mitigationText.textContent = mitigation.recommendation;
+                            
+                            mitigationDiv.appendChild(mitigationText);
+                            mitigationItem.appendChild(mitigationDiv);
+                            
+                            mitigationsList.appendChild(mitigationItem);
+                        });
+                        
+                        mitigationsContainer.appendChild(mitigationsList);
+                    } else {
+                        mitigationsContainer.innerHTML = '<div class="alert alert-info">No mitigation recommendations available.</div>';
+                    }
+                    
+                    // Populate blind spots
+                    const blindSpotsContainer = document.getElementById('blindSpotsContainer');
+                    blindSpotsContainer.innerHTML = '';
+                    
+                    if (result.analysis.potential_blind_spots && result.analysis.potential_blind_spots.length > 0) {
+                        const blindSpotsList = document.createElement('ul');
+                        blindSpotsList.className = 'list-group';
+                        
+                        result.analysis.potential_blind_spots.forEach(function(blindSpot) {
+                            const blindSpotItem = document.createElement('li');
+                            blindSpotItem.className = 'list-group-item';
+                            blindSpotItem.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> ${blindSpot}`;
+                            
+                            blindSpotsList.appendChild(blindSpotItem);
+                        });
+                        
+                        blindSpotsContainer.appendChild(blindSpotsList);
+                    } else {
+                        blindSpotsContainer.innerHTML = '<div class="alert alert-info">No potential blind spots identified.</div>';
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

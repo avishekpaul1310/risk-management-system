@@ -405,7 +405,7 @@ def risk_detail(request, risk_id):
 
 @login_required
 def add_risk_response(request, risk_id):
-    """Add a new response to a risk"""
+    """Add a new response to a risk, optionally using AI suggestions"""
     risk = get_object_or_404(Risk, id=risk_id)
     
     if request.method == 'POST':
@@ -419,11 +419,32 @@ def add_risk_response(request, risk_id):
             messages.success(request, f'Response added successfully to risk "{risk.title}"')
             return redirect('risk_detail', risk_id=risk.id)
     else:
-        form = RiskResponseForm()
+        # Check for AI suggested responses from query parameters
+        suggested_response = request.GET.get('suggested_response', '')
+        suggested_type = request.GET.get('suggested_type', '')
+        
+        # Initialize form with suggested values if provided
+        initial_data = {}
+        if suggested_response:
+            initial_data['response_text'] = suggested_response
+        if suggested_type:
+            # Map AI suggestion type to form choices
+            type_mapping = {
+                'Avoid': 'Avoid',
+                'Transfer': 'Transfer',
+                'Mitigate': 'Mitigate',
+                'Accept': 'Accept'
+            }
+            mapped_type = type_mapping.get(suggested_type, '')
+            if mapped_type:
+                initial_data['response_type'] = mapped_type
+        
+        form = RiskResponseForm(initial=initial_data)
     
     return render(request, 'risks/add_risk_response.html', {
         'form': form,
-        'risk': risk
+        'risk': risk,
+        'is_ai_suggested': bool(request.GET.get('suggested_response'))
     })
 
 @login_required

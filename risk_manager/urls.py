@@ -25,8 +25,8 @@ urlpatterns = [
     path('accounts/login/', auth_views.LoginView.as_view(template_name='risks/login.html'), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/password_change/', auth_views.PasswordChangeView.as_view(template_name='risks/password_change.html'), 
-        name='password_change'),
-    path('accounts/password_change/done/', auth_views.PasswordChangeDoneView.as_view(template_name='risks/password_change_done.html'), 
+        name='password_change'),    path('accounts/password_change/done/', auth_views.PasswordChangeDoneView.as_view(template_name='risks/password_change_done.html'), 
         name='password_change_done'),
     path('', include('risks.urls')),
+    path('ai/', include('risks.ai_urls')),
 ]
