@@ -174,19 +174,57 @@
     </div>
 </div>
 
-<!-- High Priority Risks -->
+<!-- All Risks with Pagination -->
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">High Priority Risks</h5>
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">All Risks</h5>
                 <div>
                     <input type="text" class="form-control form-control-sm d-inline-block" id="riskSearchInput" placeholder="Search risks..." style="width: 200px;">
                 </div>
-            </div>
-            <div class="card-body">
+            </div>            <div class="card-body">
+                <!-- Filter Controls -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" id="projectFilter" onchange="applyTableFilters()">
+                            <option value="all">All Projects</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" id="riskLevelFilter" onchange="applyTableFilters()">
+                            <option value="all">All Levels</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" id="statusFilter" onchange="applyTableFilters()">
+                            <option value="all">All Status</option>
+                            <option value="Open">Open</option>
+                            <option value="Mitigated">Mitigated</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" id="categoryFilter" onchange="applyTableFilters()">
+                            <option value="all">All Categories</option>
+                            {% for category_name, count in risks_by_category.items %}
+                            <option value="{{ category_name }}">{{ category_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">Clear Filters</button>
+                    </div>
+                </div>
+                
                 <div class="table-responsive">
-                    <table class="table table-hover" id="highPriorityTable">
+                    <table class="table table-hover" id="allRisksTable">
                         <thead>
                             <tr>
                                 <th>Risk</th>
@@ -200,8 +238,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for risk in high_priority_risks %}
-                            <tr class="{% if risk.risk_level == 'High' %}risk-score-high{% elif risk.risk_level == 'Medium' %}risk-score-medium{% endif %}" 
+                            {% for risk in all_risks_page %}
+                            <tr class="{% if risk.risk_level == 'High' %}risk-score-high{% elif risk.risk_level == 'Medium' %}risk-score-medium{% else %}risk-score-low{% endif %}" 
                                 data-project="{{ risk.project.id }}" 
                                 data-level="{{ risk.risk_level }}" 
                                 data-status="{{ risk.status }}" 
@@ -218,10 +256,69 @@
                                     <a href="{% url 'edit_risk' risk.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
                                 </td>
                             </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center">No risks found.</td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination -->
+                {% if all_risks_page.has_other_pages %}
+                <nav aria-label="Risks pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if all_risks_page.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ all_risks_page.previous_page_number }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in all_risks_page.paginator.page_range %}
+                            {% if all_risks_page.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > all_risks_page.number|add:'-3' and num < all_risks_page.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if all_risks_page.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ all_risks_page.next_page_number }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ all_risks_page.paginator.num_pages }}" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        Showing {{ all_risks_page.start_index }} to {{ all_risks_page.end_index }} of {{ all_risks_page.paginator.count }} risks
+                    </small>
+                    <small class="text-muted">
+                        Page {{ all_risks_page.number }} of {{ all_risks_page.paginator.num_pages }}
+                    </small>
+                </div>
+                {% endif %}
+                
                 <div class="text-center py-4" id="noRisksMessage" style="display: none;">
                     <p>No risks match your current filters.</p>
                 </div>
@@ -526,7 +623,7 @@
         const categoryFilter = document.getElementById('categoryFilter').value;
         const searchText = document.getElementById('riskSearchInput').value.toLowerCase();
         
-        const rows = document.querySelectorAll('#highPriorityTable tbody tr');
+        const rows = document.querySelectorAll('#allRisksTable tbody tr');
         let visibleCount = 0;
         
         rows.forEach(function(row) {
@@ -548,11 +645,19 @@
                 visibleCount++;
             }
         });
-        
-        // Show/hide "no risks" message
+          // Show/hide "no risks" message
         document.getElementById('noRisksMessage').style.display = visibleCount > 0 ? 'none' : 'block';
         
         // TODO: If backend API available, could update charts based on filters
+    }
+    
+    function clearFilters() {
+        document.getElementById('projectFilter').value = 'all';
+        document.getElementById('riskLevelFilter').value = 'all';
+        document.getElementById('statusFilter').value = 'all';
+        document.getElementById('categoryFilter').value = 'all';
+        document.getElementById('riskSearchInput').value = '';
+        applyTableFilters();
     }
 </script>
 {% endblock %}

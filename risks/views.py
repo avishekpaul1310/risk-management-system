@@ -6,6 +6,7 @@ from .forms import (ProjectForm, RiskForm, CategoryForm, RiskHistoryForm,
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import csv
 from django.http import HttpResponse, JsonResponse
 from datetime import datetime
@@ -287,12 +288,22 @@ def dashboard(request):
     for category in categories:
         count = open_risks_queryset.filter(category=category).count()
         if count > 0:  # Only include categories that have open risks
-            risks_by_category[category.name] = count
-    # Recent risks (last 10) - focus on recent Open risks for dashboard relevance
+            risks_by_category[category.name] = count    # Recent risks (last 10) - focus on recent Open risks for dashboard relevance
     recent_risks = open_risks_queryset.order_by('-created_at')[:10]
     
-    # High priority risks (from Open risks)
-    high_priority_risks = open_risks_queryset.order_by('-likelihood', '-impact')[:10]
+    # All risks with pagination - ordered by risk score (likelihood * impact) descending
+    all_risks_queryset = risks.order_by('-likelihood', '-impact', 'title')
+    
+    # Handle pagination for all risks
+    page = request.GET.get('page', 1)
+    paginator = Paginator(all_risks_queryset, 20)  # Show 20 risks per page
+    
+    try:
+        all_risks_page = paginator.page(page)
+    except PageNotAnInteger:
+        all_risks_page = paginator.page(1)
+    except EmptyPage:
+        all_risks_page = paginator.page(paginator.num_pages)
     
     # Prepare data for risk matrix (heat map) - use only Open risks for active risk management
     risk_matrix = [
@@ -339,7 +350,6 @@ def dashboard(request):
                 'v': score,
                 'count': count
             })
-    
     context = {
         'projects': projects,
         'project_count': project_count,
@@ -352,7 +362,7 @@ def dashboard(request):
         'closed_risks': closed_risks,
         'risks_by_category': risks_by_category,
         'recent_risks': recent_risks,
-        'high_priority_risks': high_priority_risks,
+        'all_risks_page': all_risks_page,
         'severity_data': severity_data,
         'category_data': category_data,
         'status_data': status_data,
