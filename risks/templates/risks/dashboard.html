@@ -243,22 +243,11 @@
     // Retrieve data from script tags
     const severityData = JSON.parse(document.getElementById('severity-data').textContent);
     const categoryData = JSON.parse(document.getElementById('category-data').textContent);
-    
-    // Retrieve status data from json_script tag
+      // Retrieve status data from json_script tag
     const statusData = JSON.parse(document.getElementById('status-data').textContent);
     
-    // Define the risk matrix data
-    const riskMatrixData = [
-        { x: 0, y: 2, v: 3 }, // Low likelihood, High impact
-        { x: 1, y: 2, v: 6 }, // Medium likelihood, High impact
-        { x: 2, y: 2, v: 9 }, // High likelihood, High impact
-        { x: 0, y: 1, v: 2 }, // Low likelihood, Medium impact
-        { x: 1, y: 1, v: 4 }, // Medium likelihood, Medium impact
-        { x: 2, y: 1, v: 6 }, // High likelihood, Medium impact
-        { x: 0, y: 0, v: 1 }, // Low likelihood, Low impact
-        { x: 1, y: 0, v: 2 }, // Medium likelihood, Low impact
-        { x: 2, y: 0, v: 3 }  // High likelihood, Low impact
-    ];
+    // Retrieve risk matrix data from backend
+    const riskMatrixData = JSON.parse(document.getElementById('risk-matrix-data').textContent);
     
     let severityChart, categoryChart, statusChart, heatMapChart;
     
@@ -372,17 +361,18 @@
             data: {
                 datasets: [{
                     label: 'Risk Matrix',
-                    data: riskMatrixData,
-                    backgroundColor(ctx) {
-                        const value = ctx.dataset.data[ctx.dataIndex].v;
-                        const alpha = 0.8;
+                    data: riskMatrixData,                    backgroundColor(ctx) {
+                        const count = ctx.dataset.data[ctx.dataIndex].count;
+                        const alpha = count > 0 ? 0.8 : 0.1; // Make empty cells very transparent
                         
-                        if (value >= 6) {
-                            return `rgba(220, 53, 69, ${alpha})`; // High (red)
-                        } else if (value >= 3) {
-                            return `rgba(255, 193, 7, ${alpha})`; // Medium (yellow)
+                        if (count === 0) {
+                            return `rgba(128, 128, 128, ${alpha})`; // Gray for empty cells
+                        } else if (count >= 3) {
+                            return `rgba(220, 53, 69, ${alpha})`; // High count (red)
+                        } else if (count >= 1) {
+                            return `rgba(255, 193, 7, ${alpha})`; // Medium count (yellow)
                         } else {
-                            return `rgba(40, 167, 69, ${alpha})`; // Low (green)
+                            return `rgba(40, 167, 69, ${alpha})`; // This shouldn't happen, but green as fallback
                         }
                     },
                     borderWidth: 1,
@@ -399,17 +389,26 @@
                         callbacks: {
                             title() {
                                 return '';
-                            },
-                            label(ctx) {
+                            },                            label(ctx) {
                                 const v = ctx.dataset.data[ctx.dataIndex];
                                 const likelihoodLabels = ['Low', 'Medium', 'High'];
                                 const impactLabels = ['Low', 'Medium', 'High'];
                                 
-                                return [
-                                    `Likelihood: ${likelihoodLabels[v.x]}`,
-                                    `Impact: ${impactLabels[v.y]}`,
-                                    `Risk Score: ${v.v}`
-                                ];
+                                if (v.count === 0) {
+                                    return [
+                                        `Likelihood: ${likelihoodLabels[v.x]}`,
+                                        `Impact: ${impactLabels[v.y]}`,
+                                        `Risk Score: ${v.v}`,
+                                        `No risks in this category`
+                                    ];
+                                } else {
+                                    return [
+                                        `Likelihood: ${likelihoodLabels[v.x]}`,
+                                        `Impact: ${impactLabels[v.y]}`,
+                                        `Risk Score: ${v.v}`,
+                                        `Number of Risks: ${v.count}`
+                                    ];
+                                }
                             }
                         }
                     },
