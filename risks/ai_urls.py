@@ -14,8 +14,6 @@ urlpatterns = [
     path('optimize-monte-carlo/', ai_views.optimize_monte_carlo_estimates_view, name='optimize_monte_carlo'),
     path('analyze-dependencies/<int:project_id>/', ai_views.analyze_risk_dependencies_view, name='analyze_risk_dependencies'),
     path('executive-summary/<int:project_id>/', ai_views.generate_executive_summary_view, name='generate_executive_summary'),
-    path('mitigation-timeline/', ai_views.generate_mitigation_timeline_view, name='generate_mitigation_timeline'),
-      # Page views for AI features
+    path('mitigation-timeline/', ai_views.generate_mitigation_timeline_view, name='generate_mitigation_timeline'),      # Page views for AI features
     path('project/<int:project_id>/analysis/', ai_page_views.risk_ai_analysis, name='risk_ai_analysis'),
-    path('project/<int:project_id>/enhanced-analysis/', ai_page_views.enhanced_ai_analysis, name='enhanced_ai_analysis'),
 ]

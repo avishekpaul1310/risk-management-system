@@ -243,9 +243,9 @@ function analyzeRiskDependencies(projectId, callback) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            callback(null, data.dependency_analysis);
+            callback(null, data);
         } else {
-            callback(new Error(data.message || 'Failed to analyze dependencies'), null);
+            callback(new Error(data.error || 'Failed to analyze dependencies'), null);
         }
     })
     .catch(error => {
@@ -269,9 +269,9 @@ function generateExecutiveSummary(projectId, callback) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            callback(null, data.executive_summary);
+            callback(null, data);
         } else {
-            callback(new Error(data.message || 'Failed to generate executive summary'), null);
+            callback(new Error(data.error || 'Failed to generate summary'), null);
         }
     })
     .catch(error => {
@@ -290,7 +290,7 @@ function generateMitigationTimeline(projectId, constraints, callback) {
         project_id: projectId,
         constraints: constraints || {}
     };
-    
+
     fetch('/ai/mitigation-timeline/', {
         method: 'POST',
         headers: {
@@ -302,9 +302,9 @@ function generateMitigationTimeline(projectId, constraints, callback) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            callback(null, data.mitigation_timeline);
+            callback(null, data);
         } else {
-            callback(new Error(data.message || 'Failed to generate timeline'), null);
+            callback(new Error(data.error || 'Failed to generate timeline'), null);
         }
     })
     .catch(error => {
