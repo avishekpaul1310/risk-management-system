@@ -4,8 +4,10 @@ AI-powered features for the Risk Management System using Google's Gemini 1.5 Fla
 import os
 import json
 from typing import Dict, List, Any, Optional, Tuple
+from datetime import datetime
 import google.generativeai as genai
 from django.conf import settings
+from datetime import datetime
 
 # Configure the Gemini API
 def setup_gemini_api():
@@ -329,67 +331,154 @@ def smart_risk_search(query: str, project_context: str = None) -> Dict[str, Any]
             },            "rewritten_query": query
         }
 
-def ai_risk_scoring_assistant(risk_description: str, category: str = None,
-                             similar_risks: List[Dict] = None) -> Dict[str, Any]:
+def ai_risk_scoring_assistant(risk_title: str, risk_description: str, 
+                            risk_category: str = None, project_context: str = None) -> Dict[str, Any]:
     """
-    AI-powered risk scoring with reasoning to suggest likelihood and impact scores.
+    AI Risk Scoring Assistant that suggests likelihood and impact scores with detailed reasoning.
     
     Args:
-        risk_description: The risk description to analyze
-        category: Optional risk category for context
-        similar_risks: List of similar risks with their scores for context
+        risk_title: The title/name of the risk
+        risk_description: Detailed description of the risk
+        risk_category: Optional risk category (Technical, Financial, Operational, Legal)
+        project_context: Optional context about the project
         
     Returns:
-        Dictionary with suggested scores and reasoning
+        Dictionary with suggested scores and detailed reasoning
     """
     setup_gemini_api()
+    
+    # Prepare context information
+    context_info = []
+    if risk_category:
+        context_info.append(f"Risk Category: {risk_category}")
+    if project_context:
+        context_info.append(f"Project Context: {project_context}")
+    
+    context_text = "\n".join(context_info) if context_info else "No additional context provided"
+    
+    # Initialize the model
     model = genai.GenerativeModel('gemini-1.5-flash')
     
-    context = f"Category: {category}" if category else "No category specified"
-    similar_context = ""
-    if similar_risks:
-        similar_context = "Similar risks in project:\n" + "\n".join([
-            f"- {r.get('title', 'Untitled')}: L{r.get('likelihood', 'N/A')}/I{r.get('impact', 'N/A')}" 
-            for r in similar_risks[:3]
-        ])
-    
+    # Create the comprehensive prompt for risk scoring
     prompt = f"""
-    As a risk management expert, analyze this risk and suggest likelihood and impact scores.
+    As an expert risk management consultant with deep knowledge of risk assessment methodologies, 
+    analyze this risk and provide likelihood and impact scores with detailed reasoning.
     
-    RISK DESCRIPTION: {risk_description}
-    CONTEXT: {context}
-    {similar_context}
+    RISK INFORMATION:
+    Title: {risk_title}
+    Description: {risk_description}
+    {context_text}
     
-    SCORING SCALE:
-    - Likelihood: 1 (Low - rarely occurs), 2 (Medium - occasionally occurs), 3 (High - frequently occurs)
-    - Impact: 1 (Low - minimal effect), 2 (Medium - moderate effect), 3 (High - severe effect)
+    SCORING CRITERIA:
     
-    Provide scores with clear reasoning based on the description content and context.
+    LIKELIHOOD SCALE (1-3):
+    - 1 (Low): 0-33% chance of occurring within project timeframe
+    - 2 (Medium): 34-66% chance of occurring within project timeframe  
+    - 3 (High): 67-100% chance of occurring within project timeframe
     
-    FORMAT AS JSON:
+    IMPACT SCALE (1-3):
+    - 1 (Low): Minor impact on project objectives, timeline, or budget (<10% impact)
+    - 2 (Medium): Moderate impact on project objectives, timeline, or budget (10-25% impact)
+    - 3 (High): Major impact on project objectives, timeline, or budget (>25% impact)
+    
+    ANALYSIS REQUIREMENTS:
+    1. Analyze the risk from multiple perspectives (technical, financial, operational, timeline)
+    2. Consider both direct and indirect consequences
+    3. Factor in typical industry patterns and historical data
+    4. Provide specific reasoning for each score
+    5. Suggest key indicators to monitor
+    6. Recommend immediate assessment actions
+    
+    FORMAT YOUR RESPONSE AS JSON:
     {{
-      "suggested_likelihood": 1-3,
-      "likelihood_reasoning": "Clear explanation for likelihood score",
-      "suggested_impact": 1-3,
-      "impact_reasoning": "Clear explanation for impact score",
+      "suggested_likelihood": {{
+        "score": 1-3,
+        "percentage_range": "XX-XX%",
+        "reasoning": "Detailed explanation for likelihood score",
+        "key_factors": ["Factor 1", "Factor 2", "Factor 3"],
+        "historical_precedents": "Similar risks and their frequency"
+      }},
+      "suggested_impact": {{
+        "score": 1-3,
+        "severity_level": "Low/Medium/High",
+        "reasoning": "Detailed explanation for impact score",
+        "affected_areas": ["Area 1", "Area 2", "Area 3"],
+        "potential_consequences": [
+          {{
+            "consequence": "Specific consequence",
+            "severity": "Low/Medium/High"
+          }}
+        ]
+      }},
+      "overall_risk_assessment": {{
+        "risk_score": 1-9,
+        "risk_level": "Low/Medium/High",
+        "priority_ranking": "Critical/High/Medium/Low",
+        "summary": "Overall risk assessment summary"
+      }},
+      "monitoring_indicators": [
+        {{
+          "indicator": "What to monitor",
+          "frequency": "How often to check",
+          "threshold": "When to escalate"
+        }}
+      ],
+      "immediate_actions": [
+        {{
+          "action": "Specific action to take",
+          "timeline": "When to complete",
+          "responsible_party": "Who should do it"
+        }}
+      ],
       "confidence_level": "High/Medium/Low",
-      "key_factors": ["factor1", "factor2", "factor3"]
+      "assessment_notes": "Additional insights or caveats"
     }}
     """
+    
     try:
+        # Generate the response
         response = model.generate_content(prompt)
+        
         # Extract clean JSON from response (handles markdown code blocks)
         clean_json = extract_json_from_response(response.text)
-        return json.loads(clean_json)
+        
+        # Parse the JSON response
+        result = json.loads(clean_json)
+        
+        # Add metadata
+        result['ai_analysis_timestamp'] = str(datetime.now())
+        result['model_used'] = 'gemini-1.5-flash'
+        
+        return result
+    
     except Exception as e:
-        print(f"Error in AI risk scoring: {e}")
+        # Fallback if API call fails
+        print(f"Error in AI Risk Scoring Assistant: {e}")
         return {
-            "suggested_likelihood": 2,
-            "likelihood_reasoning": "Unable to analyze - defaulting to medium likelihood",
-            "suggested_impact": 2,
-            "impact_reasoning": "Unable to analyze - defaulting to medium impact",
+            "suggested_likelihood": {
+                "score": 2,
+                "percentage_range": "30-60%",
+                "reasoning": "AI scoring unavailable - default medium score assigned",
+                "key_factors": ["AI analysis unavailable"],
+                "historical_precedents": "Unable to analyze"
+            },
+            "suggested_impact": {
+                "score": 2,
+                "severity_level": "Medium",
+                "reasoning": "AI scoring unavailable - default medium score assigned",
+                "affected_areas": ["Unknown"],
+                "potential_consequences": [{"consequence": "Unable to assess", "severity": "Medium"}]
+            },
+            "overall_risk_assessment": {
+                "risk_score": 4,
+                "risk_level": "Medium",
+                "priority_ranking": "Medium",
+                "summary": "AI assessment unavailable"
+            },
+            "monitoring_indicators": [{"indicator": "Manual assessment required", "frequency": "As needed", "threshold": "Human judgment"}],
+            "immediate_actions": [{"action": "Conduct manual risk assessment", "timeline": "ASAP", "responsible_party": "Risk Manager"}],
             "confidence_level": "Low",
-            "key_factors": ["Analysis unavailable"]
+            "assessment_notes": f"AI analysis failed: {str(e)}"
         }
 
 def auto_categorize_risk(risk_description: str, available_categories: List[str]) -> Dict[str, Any]:

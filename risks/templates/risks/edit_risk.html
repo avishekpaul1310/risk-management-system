@@ -69,15 +69,19 @@
                             {% endif %}
                         </div>
                     </div>
-                    
-                    <div class="row mb-3">
+                      <div class="row mb-3">
                         <div class="col-md-4">
                             <label for="{{ form.likelihood.id_for_label }}" class="form-label">Likelihood</label>
-                            <select name="{{ form.likelihood.name }}" id="{{ form.likelihood.id_for_label }}" class="form-select {% if form.likelihood.errors %}is-invalid{% endif %}">
-                                {% for value, text in form.fields.likelihood.choices %}
-                                <option value="{{ value }}" {% if form.likelihood.value == value %}selected{% endif %}>{{ text }}</option>
-                                {% endfor %}
-                            </select>
+                            <div class="input-group">
+                                <select name="{{ form.likelihood.name }}" id="{{ form.likelihood.id_for_label }}" class="form-select {% if form.likelihood.errors %}is-invalid{% endif %}">
+                                    {% for value, text in form.fields.likelihood.choices %}
+                                    <option value="{{ value }}" {% if form.likelihood.value == value %}selected{% endif %}>{{ text }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-info" id="getAISuggestionsBtn" title="Get AI Scoring Suggestions">
+                                    <i class="bi bi-robot"></i> AI Suggest
+                                </button>
+                            </div>
                             {% if form.likelihood.errors %}
                             <div class="invalid-feedback">
                                 {{ form.likelihood.errors }}
@@ -204,9 +208,335 @@
                     <div class="text-end">
                         <a href="{% url 'project_detail' risk.project.id %}" class="btn btn-outline-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary">Update Risk</button>
-                    </div>
-                </form>
+                    </div>                </form>
             </div>
+        </div>
+        
+        <!-- AI Risk Scoring Suggestions Modal -->
+        <div class="modal fade" id="aiScoringModal" tabindex="-1" aria-labelledby="aiScoringModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title" id="aiScoringModalLabel">
+                            <i class="bi bi-robot"></i> AI Risk Scoring Assistant
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- Suggested Scores -->
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0">AI Suggested Scores</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="card border-warning">
+                                                    <div class="card-body text-center">
+                                                        <h5 class="card-title text-warning">Likelihood</h5>
+                                                        <div class="display-6 text-warning" id="aiLikelihoodScore">-</div>
+                                                        <small class="text-muted" id="aiLikelihoodRange">-</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="card border-danger">
+                                                    <div class="card-body text-center">
+                                                        <h5 class="card-title text-danger">Impact</h5>
+                                                        <div class="display-6 text-danger" id="aiImpactScore">-</div>
+                                                        <small class="text-muted" id="aiImpactSeverity">-</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <div class="card border-info">
+                                                <div class="card-body text-center">
+                                                    <h6 class="card-title">Overall Risk Assessment</h6>
+                                                    <div class="row">
+                                                        <div class="col-4">
+                                                            <div class="text-info">Risk Score</div>
+                                                            <div class="h4" id="aiRiskScore">-</div>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <div class="text-info">Risk Level</div>
+                                                            <div class="h4" id="aiRiskLevel">-</div>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <div class="text-info">Priority</div>
+                                                            <div class="h4" id="aiPriority">-</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Detailed Analysis -->
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0">Analysis & Reasoning</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <h6 class="text-success">Likelihood Reasoning</h6>
+                                            <p class="small" id="aiLikelihoodReasoning">-</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6 class="text-danger">Impact Reasoning</h6>
+                                            <p class="small" id="aiImpactReasoning">-</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6 class="text-info">Assessment Summary</h6>
+                                            <p class="small" id="aiAssessmentSummary">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Detailed Tabs -->
+                        <ul class="nav nav-tabs" id="aiAnalysisTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="key-factors-tab" data-bs-toggle="tab" data-bs-target="#key-factors" type="button" role="tab">Key Factors</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="monitoring-tab" data-bs-toggle="tab" data-bs-target="#monitoring" type="button" role="tab">Monitoring</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="actions-tab" data-bs-toggle="tab" data-bs-target="#actions" type="button" role="tab">Immediate Actions</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="aiAnalysisTabsContent">
+                            <div class="tab-pane fade show active" id="key-factors" role="tabpanel">
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <h6>Likelihood Key Factors</h6>
+                                        <ul id="aiLikelihoodFactors" class="list-group list-group-flush"></ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Affected Areas</h6>
+                                        <ul id="aiAffectedAreas" class="list-group list-group-flush"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="monitoring" role="tabpanel">
+                                <div class="mt-3">
+                                    <h6>Monitoring Indicators</h6>
+                                    <div id="aiMonitoringIndicators" class="row"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="actions" role="tabpanel">
+                                <div class="mt-3">
+                                    <h6>Immediate Actions</h6>
+                                    <div id="aiImmediateActions" class="row"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary" id="aiConfidenceLevel">Confidence: -</span>
+                                <small class="text-muted" id="aiAssessmentNotes">-</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" id="applyAISuggestions">Apply AI Suggestions</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% load static %}
+        <script src="{% static 'risks/js/ai_features.js' %}"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const getAIBtn = document.getElementById('getAISuggestionsBtn');
+                const titleField = document.getElementById('{{ form.title.id_for_label }}');
+                const descriptionField = document.getElementById('{{ form.description.id_for_label }}');
+                const categoryField = document.getElementById('{{ form.category.id_for_label }}');
+                const likelihoodField = document.getElementById('{{ form.likelihood.id_for_label }}');
+                const impactField = document.getElementById('{{ form.impact.id_for_label }}');
+                const aiScoringModal = new bootstrap.Modal(document.getElementById('aiScoringModal'));
+                
+                let aiScoringData = null;
+                
+                // AI Risk Scoring Logic
+                getAIBtn.addEventListener('click', function() {
+                    const title = titleField.value.trim();
+                    const description = descriptionField.value.trim();
+                    const category = categoryField.options[categoryField.selectedIndex]?.text || '';
+                    
+                    if (!title || !description) {
+                        alert('Please enter both a risk title and description before getting AI scoring suggestions.');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    getAIBtn.disabled = true;
+                    getAIBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
+                    
+                    // Prepare form data
+                    const formData = new FormData();
+                    formData.append('risk_title', title);
+                    formData.append('risk_description', description);
+                    formData.append('risk_category', category);
+                    formData.append('project_context', '{{ risk.project.description }}');
+                    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                    
+                    // Call AI risk scoring
+                    fetch('{% url "ai_risk_scoring_suggestions" %}', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Reset button state
+                        getAIBtn.disabled = false;
+                        getAIBtn.innerHTML = '<i class="bi bi-robot"></i> AI Suggest';
+                        
+                        if (!data.success) {
+                            alert('Error getting AI suggestions: ' + data.error);
+                            return;
+                        }
+                        
+                        // Store result
+                        aiScoringData = data.suggestions;
+                        
+                        // Update modal with suggestions
+                        updateAIScoringModal(aiScoringData);
+                        
+                        // Show modal
+                        aiScoringModal.show();
+                    })
+                    .catch(error => {
+                        // Reset button state
+                        getAIBtn.disabled = false;
+                        getAIBtn.innerHTML = '<i class="bi bi-robot"></i> AI Suggest';
+                        alert('Error getting AI suggestions: ' + error.message);
+                    });
+                });
+                
+                // Apply AI suggestions when user confirms
+                document.getElementById('applyAISuggestions').addEventListener('click', function() {
+                    if (aiScoringData && aiScoringData.suggested_likelihood && aiScoringData.suggested_impact) {
+                        likelihoodField.value = aiScoringData.suggested_likelihood.score;
+                        impactField.value = aiScoringData.suggested_impact.score;
+                        aiScoringModal.hide();
+                        
+                        // Show success message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
+                        alertDiv.innerHTML = `
+                            <strong>AI Suggestions Applied!</strong> 
+                            Likelihood: ${aiScoringData.suggested_likelihood.score} (${aiScoringData.suggested_likelihood.percentage_range}), 
+                            Impact: ${aiScoringData.suggested_impact.score} (${aiScoringData.suggested_impact.severity_level})
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        getAIBtn.parentNode.parentNode.appendChild(alertDiv);
+                        
+                        // Auto-remove alert after 5 seconds
+                        setTimeout(() => {
+                            if (alertDiv.parentNode) {
+                                alertDiv.remove();
+                            }
+                        }, 5000);
+                    }
+                });
+                
+                function updateAIScoringModal(data) {
+                    // Update suggested scores
+                    document.getElementById('aiLikelihoodScore').textContent = data.suggested_likelihood.score;
+                    document.getElementById('aiLikelihoodRange').textContent = data.suggested_likelihood.percentage_range;
+                    document.getElementById('aiImpactScore').textContent = data.suggested_impact.score;
+                    document.getElementById('aiImpactSeverity').textContent = data.suggested_impact.severity_level;
+                    
+                    // Update overall assessment
+                    document.getElementById('aiRiskScore').textContent = data.overall_risk_assessment.risk_score;
+                    document.getElementById('aiRiskLevel').textContent = data.overall_risk_assessment.risk_level;
+                    document.getElementById('aiPriority').textContent = data.overall_risk_assessment.priority_ranking;
+                    
+                    // Update reasoning
+                    document.getElementById('aiLikelihoodReasoning').textContent = data.suggested_likelihood.reasoning;
+                    document.getElementById('aiImpactReasoning').textContent = data.suggested_impact.reasoning;
+                    document.getElementById('aiAssessmentSummary').textContent = data.overall_risk_assessment.summary;
+                    
+                    // Update key factors
+                    const likelihoodFactors = document.getElementById('aiLikelihoodFactors');
+                    likelihoodFactors.innerHTML = '';
+                    data.suggested_likelihood.key_factors.forEach(factor => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item';
+                        li.textContent = factor;
+                        likelihoodFactors.appendChild(li);
+                    });
+                    
+                    // Update affected areas
+                    const affectedAreas = document.getElementById('aiAffectedAreas');
+                    affectedAreas.innerHTML = '';
+                    data.suggested_impact.affected_areas.forEach(area => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item';
+                        li.textContent = area;
+                        affectedAreas.appendChild(li);
+                    });
+                    
+                    // Update monitoring indicators
+                    const monitoringDiv = document.getElementById('aiMonitoringIndicators');
+                    monitoringDiv.innerHTML = '';
+                    data.monitoring_indicators.forEach(indicator => {
+                        const col = document.createElement('div');
+                        col.className = 'col-md-6 mb-2';
+                        col.innerHTML = `
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">${indicator.indicator}</h6>
+                                    <p class="card-text small">
+                                        <strong>Frequency:</strong> ${indicator.frequency}<br>
+                                        <strong>Threshold:</strong> ${indicator.threshold}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                        monitoringDiv.appendChild(col);
+                    });
+                    
+                    // Update immediate actions
+                    const actionsDiv = document.getElementById('aiImmediateActions');
+                    actionsDiv.innerHTML = '';
+                    data.immediate_actions.forEach(action => {
+                        const col = document.createElement('div');
+                        col.className = 'col-md-6 mb-2';
+                        col.innerHTML = `
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">${action.action}</h6>
+                                    <p class="card-text small">
+                                        <strong>Timeline:</strong> ${action.timeline}<br>
+                                        <strong>Responsible:</strong> ${action.responsible_party}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                        actionsDiv.appendChild(col);
+                    });
+                    
+                    // Update footer info
+                    document.getElementById('aiConfidenceLevel').textContent = `Confidence: ${data.confidence_level}`;
+                    document.getElementById('aiAssessmentNotes').textContent = data.assessment_notes;
+                }
+            });
+        </script>
         </div>
     </div>
 </div>

@@ -13,7 +13,9 @@ from datetime import datetime
 from .notifications import send_high_risk_notification, send_risk_status_change_notification
 from django.urls import reverse
 from .monte_carlo import run_monte_carlo_simulation, format_currency
+from .ai_features import ai_risk_scoring_assistant
 import json
+from .ai_features import ai_risk_scoring_assistant
 
 # User registration view
 def signup(request):
@@ -585,4 +587,48 @@ def monte_carlo_simulation(request, project_id):
         'project': project,
         'active_risks': active_risks,
         'total_active_risks': active_risks.count()
+    })
+
+@login_required
+def ai_risk_scoring_suggestions(request):
+    """
+    AJAX endpoint to get AI-powered risk scoring suggestions
+    """
+    if request.method == 'POST':
+        try:
+            # Get data from the request
+            risk_title = request.POST.get('risk_title', '').strip()
+            risk_description = request.POST.get('risk_description', '').strip()
+            risk_category = request.POST.get('risk_category', '').strip()
+            project_context = request.POST.get('project_context', '').strip()
+            
+            # Validate required fields
+            if not risk_title or not risk_description:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Risk title and description are required for AI analysis'
+                })
+            
+            # Get AI suggestions
+            ai_suggestions = ai_risk_scoring_assistant(
+                risk_title=risk_title,
+                risk_description=risk_description,
+                risk_category=risk_category if risk_category else None,
+                project_context=project_context if project_context else None
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'suggestions': ai_suggestions
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error getting AI suggestions: {str(e)}'
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Only POST requests are allowed'
     })

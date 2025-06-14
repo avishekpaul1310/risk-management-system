@@ -44,6 +44,7 @@ The **Project Risk Management System** is a sophisticated web application design
 
 ### 🎯 **Risk Assessment**
 - **Traditional Risk Scoring**: Likelihood × Impact matrix
+- **🤖 AI Risk Scoring Assistant**: Intelligent likelihood and impact score suggestions with detailed reasoning
 - **Advanced Cost Modeling**: Three-point estimation (Optimistic, Most Likely, Pessimistic)
 - **Color-coded Risk Heatmaps**: Visual risk prioritization
 - **Custom Risk Categories**: Technical, Financial, Operational, Legal, and more
@@ -65,10 +66,13 @@ Our flagship feature that sets this system apart:
 ### 🤖 **AI-Powered Features** ⭐
 Our powerful AI capabilities using Google Gemini 1.5 Flash:
 
+- **🎯 AI Risk Scoring Assistant**: Intelligent likelihood and impact score suggestions with detailed reasoning
 - **Enhanced Risk Descriptions**: AI helps create clearer, more specific risk statements
 - **Smart Risk Search**: Natural language search across your risk register
 - **Risk Pattern Analysis**: Identify common themes and potential blind spots
 - **Response Suggestions**: AI-generated strategies for risk mitigation
+- **Multi-perspective Analysis**: Technical, financial, operational, and timeline considerations
+- **Monitoring Indicators**: AI-suggested metrics and escalation thresholds
 - **No Training Required**: Ready to use with zero setup or data training
 
 ### 📈 **Reporting & Analytics**
