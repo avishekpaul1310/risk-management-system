@@ -349,7 +349,7 @@ def dashboard(request):
                 'y': y,
                 'v': score,
                 'count': count
-            })
+            })    
     context = {
         'projects': projects,
         'project_count': project_count,
@@ -366,7 +366,19 @@ def dashboard(request):
         'severity_data': severity_data,
         'category_data': category_data,
         'status_data': status_data,
-        'risk_matrix_data': risk_matrix_data
+        'risk_matrix_data': risk_matrix_data,
+        # Add project-specific risk data for modals
+        'projects_with_risk_data': [
+            {
+                'project': project,
+                'total_risks': project.risks.count(),
+                'open_risks': project.risks.filter(status='Open').count(),
+                'high_risks': sum(1 for risk in project.risks.all() if risk.risk_level == 'High'),
+                'medium_risks': sum(1 for risk in project.risks.all() if risk.risk_level == 'Medium'),
+                'low_risks': sum(1 for risk in project.risks.all() if risk.risk_level == 'Low'),
+            }
+            for project in projects
+        ]
     }
     
     return render(request, 'risks/dashboard.html', context)

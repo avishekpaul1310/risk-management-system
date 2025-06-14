@@ -3,21 +3,250 @@
 
 {% block title %}Dashboard - Risk Management{% endblock %}
 
+{% block extra_css %}
+<style>
+.kpi-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.kpi-card:hover::before {
+    left: 100%;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.kpi-card .card-body {
+    position: relative;
+    z-index: 1;
+}
+
+.kpi-card .card-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.kpi-card .display-4 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.kpi-card small {
+    opacity: 0.8;
+    font-size: 0.8rem;
+}
+
+.risk-score-high {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-left: 4px solid #dc3545;
+}
+
+.risk-score-medium {
+    background-color: rgba(255, 193, 7, 0.1);  
+    border-left: 4px solid #ffc107;
+}
+
+.risk-score-low {
+    background-color: rgba(40, 167, 69, 0.1);
+    border-left: 4px solid #28a745;
+}
+
+.modal-xl .table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.badge {
+    font-size: 0.875em;
+}
+
+/* Filtered Results Section Styling */
+#filteredResultsSection {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#filteredResultsSection .card {
+    border-width: 2px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#filteredResultsSection .table-hover tbody tr:hover {
+    background-color: rgba(23, 162, 184, 0.1);
+}
+
+/* Chart containers for better spacing */
+.card .card-body {
+    padding: 1.25rem;
+}
+
+/* Better responsive layout */
+@media (max-width: 991.98px) {
+    .col-lg-8, .col-lg-4, .col-lg-6 {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Improved table spacing */
+#filteredRisksTable td, #filteredRisksTable th {
+    padding: 0.5rem 0.75rem;
+    vertical-align: middle;
+}
+
+#filteredRisksTable .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.scroll-indicator {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-5px);
+    }    60% {
+        transform: translateY(-3px);
+    }
+}
+
+/* Mobile-specific chart optimizations */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 300px !important;
+        margin-bottom: 20px;
+    }
+    
+    .card-body canvas {
+        max-height: 250px !important;
+    }
+    
+    /* Stack charts vertically on mobile */
+    .row.mb-4 .col-lg-6,
+    .row.mb-4 .col-lg-7,
+    .row.mb-4 .col-lg-5 {
+        margin-bottom: 15px;
+    }
+    
+    /* Adjust chart titles for mobile */
+    .card-header h5 {
+        font-size: 16px;
+        line-height: 1.3;
+    }
+    
+    .card-header small {
+        font-size: 12px;
+    }
+    
+    /* Improve KPI cards on mobile */
+    .kpi-card .display-4 {
+        font-size: 2rem;
+    }
+    
+    .kpi-card .card-title {
+        font-size: 14px;
+    }
+    
+    /* Mobile-friendly table */
+    .table-responsive {
+        font-size: 14px;
+    }
+    
+    /* Risk register filters on mobile */
+    .row .col-md-2,
+    .row .col-md-3 {
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chart-container {
+        height: 250px !important;
+    }
+    
+    .card-body canvas {
+        max-height: 200px !important;
+    }
+    
+    .card-header h5 {
+        font-size: 14px;
+    }
+    
+    .card-header small {
+        font-size: 11px;
+    }
+    
+    .kpi-card .display-4 {
+        font-size: 1.5rem;
+    }
+    
+    /* Compact filter buttons on very small screens */
+    .btn-sm {
+        font-size: 12px;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Tablet specific optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .chart-container {
+        height: 350px !important;
+    }
+    
+    .card-body canvas {
+        max-height: 300px !important;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>Risk Management Dashboard</h1>
-        <p class="lead">Overview of all projects and risks in the system.</p>
+<div class="container-fluid" style="max-width: 1400px;">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Risk Management Dashboard</h1>
+            <p class="lead">Overview of all projects and risks in the system.</p>
+        </div>        <div class="col-auto">
+            <a href="{% url 'export_risks_csv' %}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+            </a>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-list"></i> View Projects
+            </a>
+        </div>
     </div>
-    <div class="col-auto">
-        <a href="{% url 'export_risks_csv' %}" class="btn btn-success me-2">
-            <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
-        </a>
-        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-list"></i> View Projects
-        </a>
-    </div>
-</div>
 
 <!-- Filters -->
 <div class="card mb-4">
@@ -68,46 +297,120 @@
                         {% endfor %}
                     </select>
                 </div>
-            </div>
-            <div class="mt-2 text-end">
-                <button class="btn btn-primary" id="applyFilters">Apply Filters</button>
-                <button class="btn btn-outline-secondary" id="resetFilters">Reset</button>
+            </div>            <div class="mt-2 d-flex justify-content-between align-items-center">
+                <div class="text-muted">
+                    <small id="filterResultsCount" class="d-none">
+                        <i class="bi bi-funnel-fill"></i> <span id="filteredCount">0</span> risks match your filters
+                    </small>
+                </div>
+                <div>
+                    <button class="btn btn-primary" id="applyFilters">Apply Filters</button>
+                    <button class="btn btn-outline-secondary" id="resetFilters">Reset</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Summary Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-white bg-primary mb-3">
+<div class="row mb-4">    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3 kpi-card" data-bs-toggle="modal" data-bs-target="#projectsModal" 
+             style="cursor: pointer; transition: transform 0.2s;" role="button" tabindex="0" 
+             aria-label="View all projects" onkeydown="handleKpiKeydown(event, '#projectsModal')">
             <div class="card-body">
-                <h5 class="card-title">Projects</h5>
+                <h5 class="card-title">
+                    <i class="bi bi-folder"></i> Projects
+                </h5>
                 <p class="card-text display-4" id="project-count">{{ project_count }}</p>
+                <small class="text-light">Click to view all projects</small>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-info mb-3">
+        <div class="card text-white bg-info mb-3 kpi-card" data-bs-toggle="modal" data-bs-target="#totalRisksModal" 
+             style="cursor: pointer; transition: transform 0.2s;" role="button" tabindex="0" 
+             aria-label="View all risks" onkeydown="handleKpiKeydown(event, '#totalRisksModal')">
             <div class="card-body">
-                <h5 class="card-title">Total Risks</h5>
+                <h5 class="card-title">
+                    <i class="bi bi-exclamation-triangle"></i> Total Risks
+                </h5>
                 <p class="card-text display-4" id="risk-count">{{ risk_count }}</p>
+                <small class="text-light">Click to view all risks</small>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-warning mb-3">
+        <div class="card text-white bg-warning mb-3 kpi-card" data-bs-toggle="modal" data-bs-target="#openRisksModal" 
+             style="cursor: pointer; transition: transform 0.2s;" role="button" tabindex="0" 
+             aria-label="View open risks" onkeydown="handleKpiKeydown(event, '#openRisksModal')">
             <div class="card-body">
-                <h5 class="card-title">Open Risks</h5>
+                <h5 class="card-title">
+                    <i class="bi bi-exclamation-circle"></i> Open Risks
+                </h5>
                 <p class="card-text display-4" id="open-risks">{{ open_risks }}</p>
+                <small class="text-light">Click to view open risks</small>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-success mb-3">
+        <div class="card text-white bg-success mb-3 kpi-card" data-bs-toggle="modal" data-bs-target="#mitigatedRisksModal" 
+             style="cursor: pointer; transition: transform 0.2s;" role="button" tabindex="0" 
+             aria-label="View mitigated risks" onkeydown="handleKpiKeydown(event, '#mitigatedRisksModal')">
             <div class="card-body">
-                <h5 class="card-title">Mitigated Risks</h5>
+                <h5 class="card-title">
+                    <i class="bi bi-shield-check"></i> Mitigated Risks
+                </h5>
                 <p class="card-text display-4" id="mitigated-risks">{{ mitigated_risks }}</p>
+                <small class="text-light">Click to view mitigated risks</small>
+            </div>
+        </div>    </div>
+</div>
+
+<!-- Filtered Results Section (appears right after filters) -->
+<div class="row mb-4" id="filteredResultsSection" style="display: none;">
+    <div class="col-12">
+        <div class="card border-info shadow-sm">
+            <div class="card-header bg-info text-white">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-funnel-fill"></i> Filtered Results
+                        </h5>
+                    </div>
+                    <div class="col-auto">
+                        <span class="badge bg-light text-info fs-6" id="filteredResultsCount">0 risks</span>
+                        <button class="btn btn-sm btn-outline-light ms-2" onclick="clearMainFilters()" title="Clear all filters">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0" id="filteredRisksTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 25%;">Risk</th>
+                                <th style="width: 18%;">Project</th>
+                                <th style="width: 15%;">Category</th>
+                                <th style="width: 8%;">Score</th>
+                                <th style="width: 10%;">Status</th>
+                                <th style="width: 12%;">Owner</th>
+                                <th style="width: 12%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filtered results will be populated here via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center py-5" id="noFilteredRisks" style="display: none;">
+                    <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3 mb-3">No risks match your current filters.</p>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="clearMainFilters()">
+                        <i class="bi bi-arrow-clockwise"></i> Clear Filters
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -115,40 +418,44 @@
 
 <!-- Charts -->
 <div class="row mb-4">
-    <!-- Risk Distribution Chart -->
-    <div class="col-md-6">
-        <div class="card mb-4">
+    <!-- Risk Severity Distribution Chart -->
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card h-100">
             <div class="card-header bg-primary text-white">
                 <h5 class="card-title mb-0">Risk Severity Distribution</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="riskSeverityChart" height="200"></canvas>
+            </div>            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="riskSeverityChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
     
     <!-- Risk by Category Chart -->
-    <div class="col-md-6">
-        <div class="card mb-4">
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card h-100">
             <div class="card-header bg-primary text-white">
                 <h5 class="card-title mb-0">Risks by Category</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="riskCategoryChart" height="200"></canvas>
+            </div>            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="riskCategoryChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- New Row with Risk Heat Map -->
+<!-- Second Row with Risk Heat Map and Status Distribution -->
 <div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card mb-4">            <div class="card-header bg-primary text-white">
+    <div class="col-lg-7 col-md-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
                 <h5 class="card-title mb-0">Risk Distribution Chart (Open Risks)</h5>
                 <small class="text-light">Shows active risks by likelihood and impact combinations</small>
-            </div>
-            <div class="card-body" style="height: 400px; padding-bottom: 30px;">
-                <canvas id="riskHeatMap" height="350"></canvas>
+            </div>            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="riskHeatMap"></canvas>
+                </div>
             </div>
             <div class="card-footer bg-light">
                 <div class="row">
@@ -161,14 +468,14 @@
             </div>
         </div>
     </div>
-    
-    <div class="col-md-6">
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">Risk Status Distribution</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="riskStatusChart" height="300"></canvas>
+      <div class="col-lg-5 col-md-12 mb-4">
+        <div class="card h-100">            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0 fw-bold">Risk Status Distribution</h5>
+                <small class="text-light">Current status of all risks in the system</small>
+            </div>            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="riskStatusChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -177,49 +484,62 @@
 <!-- All Risks with Pagination -->
 <div class="row">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">All Risks</h5>
+        <div class="card">            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-ul"></i> Complete Risk Register
+                </h5>
                 <div>
+                    <small class="me-3">Browse all {{ all_risks_page.paginator.count }} risks</small>
                     <input type="text" class="form-control form-control-sm d-inline-block" id="riskSearchInput" placeholder="Search risks..." style="width: 200px;">
                 </div>
-            </div>            <div class="card-body">
-                <!-- Filter Controls -->
+            </div><div class="card-body">                <!-- Filter Controls -->
                 <div class="row mb-3">
-                    <div class="col-md-3">
-                        <select class="form-select form-select-sm" id="projectFilter" onchange="applyTableFilters()">
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label">Project</label>
+                        <select class="form-select form-select-sm" id="tableProjectFilter">
                             <option value="all">All Projects</option>
                             {% for project in projects %}
                             <option value="{{ project.id }}">{{ project.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <select class="form-select form-select-sm" id="riskLevelFilter" onchange="applyTableFilters()">
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Risk Level</label>
+                        <select class="form-select form-select-sm" id="tableRiskLevelFilter">
                             <option value="all">All Levels</option>
                             <option value="High">High</option>
                             <option value="Medium">Medium</option>
                             <option value="Low">Low</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <select class="form-select form-select-sm" id="statusFilter" onchange="applyTableFilters()">
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Status</label>
+                        <select class="form-select form-select-sm" id="tableStatusFilter">
                             <option value="all">All Status</option>
                             <option value="Open">Open</option>
                             <option value="Mitigated">Mitigated</option>
                             <option value="Closed">Closed</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <select class="form-select form-select-sm" id="categoryFilter" onchange="applyTableFilters()">
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label">Category</label>
+                        <select class="form-select form-select-sm" id="tableCategoryFilter">
                             <option value="all">All Categories</option>
                             {% for category_name, count in risks_by_category.items %}
                             <option value="{{ category_name }}">{{ category_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">Clear Filters</button>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-primary" id="applyTableFilters">
+                                <i class="bi bi-funnel"></i> Filter
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" id="clearTableFilters">
+                                <i class="bi bi-arrow-clockwise"></i> Clear
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -323,6 +643,327 @@
                     <p>No risks match your current filters.</p>
                 </div>
             </div>
+        </div>    </div>
+</div>
+
+<!-- KPI Modal Components -->
+<!-- Projects Modal -->
+<div class="modal fade" id="projectsModal" tabindex="-1" aria-labelledby="projectsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="projectsModalLabel">
+                    <i class="bi bi-folder"></i> All Projects ({{ project_count }})
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Description</th>
+                                <th>Total Risks</th>
+                                <th>Open Risks</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>                        <tbody>
+                            {% for project_data in projects_with_risk_data %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'project_detail' project_data.project.id %}" class="text-decoration-none">
+                                        <strong>{{ project_data.project.name }}</strong>
+                                    </a>
+                                </td>
+                                <td>{{ project_data.project.description|truncatechars:100 }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ project_data.total_risks }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning">{{ project_data.open_risks }}</span>
+                                </td>
+                                <td>{{ project_data.project.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'project_detail' project_data.project.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    <a href="{% url 'edit_project' project_data.project.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No projects found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="{% url 'add_project' %}" class="btn btn-primary">Add New Project</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Total Risks Modal -->
+<div class="modal fade" id="totalRisksModal" tabindex="-1" aria-labelledby="totalRisksModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="totalRisksModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> All Risks ({{ risk_count }})
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="modalProjectFilter">
+                                <option value="all">All Projects</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="modalRiskLevelFilter">
+                                <option value="all">All Risk Levels</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control form-control-sm" id="modalRiskSearch" placeholder="Search risks...">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="clearModalFilters()">Clear Filters</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover" id="modalRisksTable">
+                        <thead>
+                            <tr>
+                                <th>Risk</th>
+                                <th>Project</th>
+                                <th>Category</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for risk in all_risks_page %}
+                            <tr class="{% if risk.risk_level == 'High' %}risk-score-high{% elif risk.risk_level == 'Medium' %}risk-score-medium{% else %}risk-score-low{% endif %}" 
+                                data-project="{{ risk.project.id }}" 
+                                data-level="{{ risk.risk_level }}" 
+                                data-status="{{ risk.status }}" 
+                                data-category="{{ risk.category.name }}">
+                                <td>
+                                    <a href="{% url 'risk_detail' risk.id %}" class="text-decoration-none">
+                                        <strong>{{ risk.title }}</strong>
+                                    </a>
+                                </td>
+                                <td>{{ risk.project.name }}</td>
+                                <td>{{ risk.category.name|default:"None" }}</td>
+                                <td>
+                                    <span class="badge bg-{% if risk.risk_level == 'High' %}danger{% elif risk.risk_level == 'Medium' %}warning{% else %}success{% endif %}">
+                                        {{ risk.risk_score }}
+                                    </span>
+                                </td>
+                                <td>{{ risk.status }}</td>
+                                <td>{{ risk.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'risk_detail' risk.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    <a href="{% url 'edit_risk' risk.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">No risks found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Open Risks Modal -->
+<div class="modal fade" id="openRisksModal" tabindex="-1" aria-labelledby="openRisksModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="openRisksModalLabel">
+                    <i class="bi bi-exclamation-circle"></i> Open Risks ({{ open_risks }})
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <select class="form-select form-select-sm" id="openRisksProjectFilter">
+                                <option value="all">All Projects</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control form-control-sm" id="openRisksSearch" placeholder="Search open risks...">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="clearOpenRisksFilters()">Clear Filters</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i> These are risks that require immediate attention and action.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover" id="openRisksTable">
+                        <thead>
+                            <tr>
+                                <th>Risk</th>
+                                <th>Project</th>
+                                <th>Risk Level</th>
+                                <th>Score</th>
+                                <th>Owner</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for risk in all_risks_page %}
+                            {% if risk.status == 'Open' %}
+                            <tr class="{% if risk.risk_level == 'High' %}risk-score-high{% elif risk.risk_level == 'Medium' %}risk-score-medium{% else %}risk-score-low{% endif %}" 
+                                data-project="{{ risk.project.id }}">
+                                <td>
+                                    <a href="{% url 'risk_detail' risk.id %}" class="text-decoration-none">
+                                        <strong>{{ risk.title }}</strong>
+                                    </a>
+                                </td>
+                                <td>{{ risk.project.name }}</td>
+                                <td>
+                                    <span class="badge bg-{% if risk.risk_level == 'High' %}danger{% elif risk.risk_level == 'Medium' %}warning{% else %}success{% endif %}">
+                                        {{ risk.risk_level }}
+                                    </span>
+                                </td>
+                                <td><strong>{{ risk.risk_score }}</strong></td>
+                                <td>{{ risk.owner }}</td>
+                                <td>{{ risk.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'risk_detail' risk.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    <a href="{% url 'add_risk_response' risk.id %}" class="btn btn-sm btn-success">Add Response</a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">No open risks found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mitigated Risks Modal -->
+<div class="modal fade" id="mitigatedRisksModal" tabindex="-1" aria-labelledby="mitigatedRisksModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="mitigatedRisksModalLabel">
+                    <i class="bi bi-shield-check"></i> Mitigated Risks ({{ mitigated_risks }})
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <select class="form-select form-select-sm" id="mitigatedRisksProjectFilter">
+                                <option value="all">All Projects</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control form-control-sm" id="mitigatedRisksSearch" placeholder="Search mitigated risks...">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="clearMitigatedRisksFilters()">Clear Filters</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> These risks have been successfully mitigated with appropriate responses.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover" id="mitigatedRisksTable">
+                        <thead>
+                            <tr>
+                                <th>Risk</th>
+                                <th>Project</th>
+                                <th>Risk Level</th>
+                                <th>Score</th>
+                                <th>Mitigation Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for risk in all_risks_page %}
+                            {% if risk.status == 'Mitigated' %}
+                            <tr class="{% if risk.risk_level == 'High' %}risk-score-high{% elif risk.risk_level == 'Medium' %}risk-score-medium{% else %}risk-score-low{% endif %}" 
+                                data-project="{{ risk.project.id }}">
+                                <td>
+                                    <a href="{% url 'risk_detail' risk.id %}" class="text-decoration-none">
+                                        <strong>{{ risk.title }}</strong>
+                                    </a>
+                                </td>
+                                <td>{{ risk.project.name }}</td>
+                                <td>
+                                    <span class="badge bg-{% if risk.risk_level == 'High' %}danger{% elif risk.risk_level == 'Medium' %}warning{% else %}success{% endif %}">
+                                        {{ risk.risk_level }}
+                                    </span>
+                                </td>
+                                <td><strong>{{ risk.risk_score }}</strong></td>
+                                <td>{{ risk.updated_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'risk_detail' risk.id %}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No mitigated risks found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -374,52 +1015,256 @@
     
     let severityChart, categoryChart, statusChart, heatMapChart;
     
-    // Initialize charts when the document is ready
+    // Mobile detection and optimization functions
+    const isMobile = () => window.innerWidth <= 768;
+    const isTablet = () => window.innerWidth <= 1024 && window.innerWidth > 768;
+    const isSmallMobile = () => window.innerWidth <= 480;
+    
+    // Mobile-optimized chart options helper
+    const getMobileChartOptions = (baseOptions) => {
+        if (isMobile()) {
+            const mobileOptions = {
+                ...baseOptions,
+                maintainAspectRatio: false,
+                responsive: true,
+                plugins: {
+                    ...baseOptions.plugins,
+                    legend: {
+                        ...baseOptions.plugins?.legend,
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: isSmallMobile() ? 10 : 12,
+                            padding: isSmallMobile() ? 8 : 10,
+                            font: {
+                                size: isSmallMobile() ? 9 : 10
+                            }
+                        }
+                    }
+                }
+            };
+            
+            // Adjust scales for mobile if they exist
+            if (baseOptions.scales) {
+                mobileOptions.scales = {
+                    ...baseOptions.scales,
+                    x: baseOptions.scales.x ? {
+                        ...baseOptions.scales.x,
+                        ticks: {
+                            ...baseOptions.scales.x.ticks,
+                            font: {
+                                size: isSmallMobile() ? 9 : 10
+                            }
+                        },
+                        title: baseOptions.scales.x.title ? {
+                            ...baseOptions.scales.x.title,
+                            font: {
+                                size: isSmallMobile() ? 10 : 11
+                            }
+                        } : undefined
+                    } : undefined,
+                    y: baseOptions.scales.y ? {
+                        ...baseOptions.scales.y,
+                        ticks: {
+                            ...baseOptions.scales.y.ticks,
+                            font: {
+                                size: isSmallMobile() ? 9 : 10
+                            }
+                        },
+                        title: baseOptions.scales.y.title ? {
+                            ...baseOptions.scales.y.title,
+                            font: {
+                                size: isSmallMobile() ? 10 : 11
+                            }
+                        } : undefined
+                    } : undefined
+                };
+            }
+            
+            return mobileOptions;
+        }
+        return baseOptions;
+    };
+    
+    // Enhanced resize handling for mobile devices
+    const resizeAllCharts = () => {
+        setTimeout(() => {
+            console.log('Resizing all charts...');
+            if (severityChart) severityChart.resize();
+            if (categoryChart) categoryChart.resize();
+            if (statusChart) statusChart.resize();
+            if (heatMapChart) heatMapChart.resize();
+        }, 100);
+    };
+    
+    // Mobile testing function for debugging
+    window.testMobileCharts = () => {
+        const isMobileView = isMobile();
+        console.log('=== Mobile Chart Debug Info ===');
+        console.log('Mobile view:', isMobileView);
+        console.log('Screen dimensions:', window.innerWidth, 'x', window.innerHeight);
+        console.log('Device pixel ratio:', window.devicePixelRatio);
+        console.log('User agent:', navigator.userAgent);
+        
+        // Test all charts
+        const charts = [
+            { name: 'Severity Chart', chart: severityChart },
+            { name: 'Category Chart', chart: categoryChart },
+            { name: 'Status Chart', chart: statusChart },
+            { name: 'Heat Map Chart', chart: heatMapChart }
+        ];
+        
+        charts.forEach(({ name, chart }) => {
+            if (chart && chart.canvas) {
+                console.log(`${name}:`);
+                console.log(`  Canvas size: ${chart.canvas.width} x ${chart.canvas.height}`);
+                console.log(`  Display size: ${chart.canvas.style.width} x ${chart.canvas.style.height}`);
+                console.log(`  Container: ${chart.canvas.parentElement.clientWidth} x ${chart.canvas.parentElement.clientHeight}`);
+            }
+        });
+    };      // Initialize charts when the document is ready
     document.addEventListener('DOMContentLoaded', function() {
         initCharts();
-        setupFilters();
-        setupSearch();
+        setupFilters();    });
+
+    // Enhanced mobile-friendly resize handling
+    let resizeTimer;
+    let initialViewportHeight = window.innerHeight;
+    
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            const currentViewportHeight = window.innerHeight;
+            const heightDifference = Math.abs(initialViewportHeight - currentViewportHeight);
+            
+            // Check if this is likely a mobile keyboard show/hide (significant height change)
+            if (isMobile() && heightDifference > 150) {
+                console.log('Mobile keyboard detected, resizing charts...');
+                resizeAllCharts();
+            } else {
+                // Normal window resize
+                resizeAllCharts();
+            }
+        }, 250);
     });
     
-    function initCharts() {
-        // Risk Severity Chart
+    // Handle device orientation changes (mobile/tablet)
+    window.addEventListener('orientationchange', function() {
+        setTimeout(() => {
+            console.log('Orientation changed, resizing charts...');
+            initialViewportHeight = window.innerHeight; // Update baseline
+            resizeAllCharts();
+        }, 500); // Longer delay for orientation change
+    });
+    
+    // Handle visibility changes (when switching between apps on mobile)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && isMobile()) {
+            setTimeout(() => {
+                console.log('Page became visible on mobile, resizing charts...');
+                resizeAllCharts();
+            }, 300);
+        }
+    });function initCharts() {        // Risk Severity Chart
         const severityCtx = document.getElementById('riskSeverityChart').getContext('2d');
+        const severityOptions = {
+            indexAxis: 'y', // Makes the bar chart horizontal
+            responsive: true,
+            maintainAspectRatio: !isMobile(),
+            aspectRatio: isMobile() ? undefined : 2,
+            plugins: {
+                legend: {
+                    display: false, // Hide legend since colors are self-explanatory
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total ? Math.round((value / total) * 100) : 0;
+                            return `${label}: ${value} risks (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Risks'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Risk Severity'
+                    }
+                }
+            }
+        };
+        
         severityChart = new Chart(severityCtx, {
-            type: 'pie',
+            type: 'bar',
             data: {
                 labels: ['High', 'Medium', 'Low'],
                 datasets: [{
+                    label: 'Number of Risks',
                     data: [
                         severityData.high,
                         severityData.medium,
                         severityData.low
                     ],
                     backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
+                    borderColor: ['#dc3545', '#ffc107', '#28a745'],
+                    borderWidth: 1
                 }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'right',
+            options: getMobileChartOptions(severityOptions)
+        });
+          // Risk Category Chart
+        const categoryCtx = document.getElementById('riskCategoryChart').getContext('2d');
+        const categoryOptions = {
+            responsive: true,
+            maintainAspectRatio: !isMobile(),
+            aspectRatio: isMobile() ? undefined : 1.5,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = total ? Math.round((value / total) * 100) : 0;
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
+                    title: {
+                        display: true,
+                        text: 'Number of Risks'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Risk Categories'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.raw || 0;
+                            return `${label}: ${value}`;
                         }
                     }
                 }
             }
-        });
+        };
         
-        // Risk Category Chart
-        const categoryCtx = document.getElementById('riskCategoryChart').getContext('2d');
         categoryChart = new Chart(categoryCtx, {
             type: 'bar',
             data: {
@@ -432,50 +1277,64 @@
                     borderWidth: 1
                 }]
             },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        }
-                    }
+            options: getMobileChartOptions(categoryOptions)
+        });          // Risk Status Chart
+        const statusCtx = document.getElementById('riskStatusChart').getContext('2d');
+        const statusOptions = {
+            indexAxis: 'y', // Makes the bar chart horizontal
+            responsive: true,
+            maintainAspectRatio: !isMobile(),
+            aspectRatio: isMobile() ? undefined : 1.4,
+            plugins: {
+                legend: {
+                    display: false, // Hide legend since colors are self-explanatory
                 },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.dataset.label || '';
-                                const value = context.raw || 0;
-                                return `${label}: ${value}`;
-                            }
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total ? Math.round((value / total) * 100) : 0;
+                            return `${label}: ${value} risks (${percentage}%)`;
                         }
                     }
                 }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Risks'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Risk Status'
+                    }
+                }
             }
-        });
+        };
         
-        // Risk Status Chart
-        const statusCtx = document.getElementById('riskStatusChart').getContext('2d');
         statusChart = new Chart(statusCtx, {
-            type: 'pie',
+            type: 'bar',
             data: {
                 labels: statusData.labels,
                 datasets: [{
+                    label: 'Number of Risks',
                     data: statusData.values,
                     backgroundColor: ['#ffc107', '#17a2b8', '#28a745'],
+                    borderColor: ['#ffc107', '#17a2b8', '#28a745'],
+                    borderWidth: 1
                 }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                    }
-                }
-            }
-        });        // Risk Heat Map - Simple bar chart approach
+            options: getMobileChartOptions(statusOptions)
+        });// Risk Heat Map - Simple bar chart approach
         const heatMapCtx = document.getElementById('riskHeatMap').getContext('2d');
         
         // Create labels and data for each risk score combination
@@ -503,9 +1362,78 @@
                 }
             }
         });
-        
-        console.log('Heat map labels:', heatMapLabels);
+          console.log('Heat map labels:', heatMapLabels);
         console.log('Heat map counts:', heatMapCounts);
+        
+        const heatMapOptions = {
+            responsive: true,
+            maintainAspectRatio: !isMobile(),
+            aspectRatio: isMobile() ? undefined : 1.8,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Risk Distribution by Likelihood × Impact'
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label; // Show the full category name as title
+                        },
+                        label: function(context) {
+                            const value = context.parsed.y || 0;
+                            console.log('Bar chart tooltip - Label:', context.label, 'Value:', value);
+                            return `Number of Risks: ${value}`;
+                        },
+                        afterLabel: function(context) {
+                            // Extract score from label for additional info
+                            const label = context.label;
+                            const scoreMatch = label.match(/Score (\d+)/);
+                            if (scoreMatch) {
+                                const score = scoreMatch[1];
+                                if (score >= 6) {
+                                    return 'Risk Level: High';
+                                } else if (score >= 3) {
+                                    return 'Risk Level: Medium';
+                                } else {
+                                    return 'Risk Level: Low';
+                                }
+                            }
+                            return '';
+                        }
+                    }
+                },
+                legend: {
+                    display: false // Hide legend since colors are self-explanatory
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Risks'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Risk Categories (hover for details)'
+                    },
+                    ticks: {
+                        display: false // Hide individual bar labels
+                    },
+                    grid: {
+                        display: false // Clean up the appearance
+                    }
+                }                },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        };
         
         heatMapChart = new Chart(heatMapCtx, {
             type: 'bar',
@@ -518,109 +1446,138 @@
                     borderColor: heatMapColors.map(color => color.replace('0.8', '1')),
                     borderWidth: 1
                 }]
-            },            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Risk Distribution by Likelihood × Impact'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            title: function(context) {
-                                return context[0].label; // Show the full category name as title
-                            },
-                            label: function(context) {
-                                const value = context.parsed.y || 0;
-                                console.log('Bar chart tooltip - Label:', context.label, 'Value:', value);
-                                return `Number of Risks: ${value}`;
-                            },
-                            afterLabel: function(context) {
-                                // Extract score from label for additional info
-                                const label = context.label;
-                                const scoreMatch = label.match(/Score (\d+)/);
-                                if (scoreMatch) {
-                                    const score = scoreMatch[1];
-                                    if (score >= 6) {
-                                        return 'Risk Level: High';
-                                    } else if (score >= 3) {
-                                        return 'Risk Level: Medium';
-                                    } else {
-                                        return 'Risk Level: Low';
-                                    }
-                                }
-                                return '';
-                            }
-                        }
-                    },
-                    legend: {
-                        display: false // Hide legend since colors are self-explanatory
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        },
-                        title: {
-                            display: true,
-                            text: 'Number of Risks'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Risk Categories (hover for details)'
-                        },
-                        ticks: {
-                            display: false // Hide individual bar labels
-                        },
-                        grid: {
-                            display: false // Clean up the appearance
-                        }
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                }
-            }
+            },
+            options: getMobileChartOptions(heatMapOptions)
         });
     }
-    
-    function setupFilters() {
+      function setupFilters() {
         const applyFilters = document.getElementById('applyFilters');
         const resetFilters = document.getElementById('resetFilters');
         
         applyFilters.addEventListener('click', function() {
-            applyTableFilters();
+            applyMainFilters();
         });
         
         resetFilters.addEventListener('click', function() {
-            document.getElementById('projectFilter').value = 'all';
-            document.getElementById('riskLevelFilter').value = 'all';
-            document.getElementById('statusFilter').value = 'all';
-            document.getElementById('categoryFilter').value = 'all';
-            document.getElementById('riskSearchInput').value = '';
-            applyTableFilters();
+            clearMainFilters();
         });
-    }
-    
-    function setupSearch() {
-        const searchInput = document.getElementById('riskSearchInput');
         
-        searchInput.addEventListener('keyup', function() {
-            applyTableFilters();
-        });
+        // Also setup the existing table filters (for the All Risks section at bottom)
+        setupTableFilters();
+    }
+      function setupTableFilters() {
+        // Add event listeners for the Complete Risk Register filter buttons
+        const applyTableFiltersBtn = document.getElementById('applyTableFilters');
+        const clearTableFiltersBtn = document.getElementById('clearTableFilters');
+        
+        if (applyTableFiltersBtn) {
+            applyTableFiltersBtn.addEventListener('click', function() {
+                applyTableFilters();
+            });
+        }
+        
+        if (clearTableFiltersBtn) {
+            clearTableFiltersBtn.addEventListener('click', function() {
+                clearTableFilters();
+            });
+        }
+        
+        // Also setup search input to filter as user types
+        const searchInput = document.getElementById('riskSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                // Only apply filters automatically if user is typing in search box
+                // This maintains the expectation that search works immediately
+                applyTableFilters();
+            });
+        }
     }
     
-    function applyTableFilters() {
-        const projectFilter = document.getElementById('projectFilter').value;
-        const riskLevelFilter = document.getElementById('riskLevelFilter').value;
-        const statusFilter = document.getElementById('statusFilter').value;
-        const categoryFilter = document.getElementById('categoryFilter').value;
+    function applyMainFilters() {
+        const projectFilter = document.querySelector('#filterCollapse #projectFilter').value;
+        const riskLevelFilter = document.querySelector('#filterCollapse #riskLevelFilter').value;
+        const statusFilter = document.querySelector('#filterCollapse #statusFilter').value;
+        const categoryFilter = document.querySelector('#filterCollapse #categoryFilter').value;
+        
+        // Get all risks from the main table
+        const allRows = document.querySelectorAll('#allRisksTable tbody tr');
+        const filteredRows = [];
+        let visibleCount = 0;
+        
+        allRows.forEach(function(row) {
+            // Skip empty rows
+            if (row.children.length < 7) return;
+            
+            const projectMatch = projectFilter === 'all' || row.dataset.project === projectFilter;
+            const levelMatch = riskLevelFilter === 'all' || row.dataset.level === riskLevelFilter;
+            const statusMatch = statusFilter === 'all' || row.dataset.status === statusFilter;
+            const categoryMatch = categoryFilter === 'all' || row.dataset.category === categoryFilter;
+            
+            const showRow = projectMatch && levelMatch && statusMatch && categoryMatch;
+            
+            if (showRow) {
+                filteredRows.push(row.cloneNode(true));
+                visibleCount++;
+            }
+        });
+        
+        // Update filtered results section
+        updateFilteredResults(filteredRows, visibleCount);
+          // Show the filtered results section
+        document.getElementById('filteredResultsSection').style.display = 'block';
+        
+        // Update results count in filters section
+        const filterResultsCount = document.getElementById('filterResultsCount');
+        filterResultsCount.classList.remove('d-none');
+        document.getElementById('filteredCount').textContent = visibleCount;
+        
+        // Scroll to results
+        setTimeout(() => {
+            document.getElementById('filteredResultsSection').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100);
+    }
+    
+    function updateFilteredResults(rows, count) {
+        const tbody = document.querySelector('#filteredRisksTable tbody');
+        const noResultsDiv = document.getElementById('noFilteredRisks');
+        const countBadge = document.getElementById('filteredResultsCount');
+        
+        // Clear existing results
+        tbody.innerHTML = '';
+        
+        if (count === 0) {
+            noResultsDiv.style.display = 'block';
+            countBadge.textContent = '0 risks';
+        } else {
+            noResultsDiv.style.display = 'none';
+            countBadge.textContent = `${count} risk${count !== 1 ? 's' : ''}`;
+            
+            // Add filtered rows to results table
+            rows.forEach(row => {
+                tbody.appendChild(row);
+            });
+        }
+    }
+    
+    function clearMainFilters() {
+        // Clear main filter values
+        document.querySelector('#filterCollapse #projectFilter').value = 'all';
+        document.querySelector('#filterCollapse #riskLevelFilter').value = 'all';
+        document.querySelector('#filterCollapse #statusFilter').value = 'all';
+        document.querySelector('#filterCollapse #categoryFilter').value = 'all';
+          // Hide filtered results section
+        document.getElementById('filteredResultsSection').style.display = 'none';        
+        // Hide results count
+        document.getElementById('filterResultsCount').classList.add('d-none');
+    }
+      function applyTableFilters() {
+        const projectFilter = document.getElementById('tableProjectFilter').value;
+        const riskLevelFilter = document.getElementById('tableRiskLevelFilter').value;
+        const statusFilter = document.getElementById('tableStatusFilter').value;
+        const categoryFilter = document.getElementById('tableCategoryFilter').value;
         const searchText = document.getElementById('riskSearchInput').value.toLowerCase();
         
         const rows = document.querySelectorAll('#allRisksTable tbody tr');
@@ -650,14 +1607,183 @@
         
         // TODO: If backend API available, could update charts based on filters
     }
-    
-    function clearFilters() {
-        document.getElementById('projectFilter').value = 'all';
-        document.getElementById('riskLevelFilter').value = 'all';
-        document.getElementById('statusFilter').value = 'all';
-        document.getElementById('categoryFilter').value = 'all';
+      function clearTableFilters() {
+        document.getElementById('tableProjectFilter').value = 'all';
+        document.getElementById('tableRiskLevelFilter').value = 'all';
+        document.getElementById('tableStatusFilter').value = 'all';
+        document.getElementById('tableCategoryFilter').value = 'all';
         document.getElementById('riskSearchInput').value = '';
         applyTableFilters();
     }
+      // KPI Card hover effects and keyboard handling
+    document.addEventListener('DOMContentLoaded', function() {
+        const kpiCards = document.querySelectorAll('.kpi-card');
+        
+        kpiCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+                this.style.boxShadow = '0 8px 16px rgba(0,0,0,0.2)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = '';
+            });
+            
+            // Add focus styles for keyboard navigation
+            card.addEventListener('focus', function() {
+                this.style.outline = '3px solid rgba(255,255,255,0.5)';
+                this.style.outlineOffset = '2px';
+            });
+            
+            card.addEventListener('blur', function() {
+                this.style.outline = '';
+                this.style.outlineOffset = '';
+            });
+        });
+    });
+    
+    // Handle keyboard navigation for KPI cards
+    function handleKpiKeydown(event, modalTarget) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            const modal = new bootstrap.Modal(document.querySelector(modalTarget));
+            modal.show();
+        }
+    }
+      // Modal filtering functions
+    function filterModalTable(tableId, projectFilterId, searchInputId, statusFilter = null) {
+        const projectFilter = document.getElementById(projectFilterId).value;
+        const searchText = document.getElementById(searchInputId).value.toLowerCase();
+        const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+        let visibleCount = 0;
+        
+        rows.forEach(function(row) {
+            if (!row.dataset.project && !row.innerHTML.includes('No')) return; // Skip empty rows but allow "No results" rows
+            
+            const projectMatch = projectFilter === 'all' || row.dataset.project === projectFilter;
+            const textMatch = searchText === '' || row.innerText.toLowerCase().includes(searchText);
+            const statusMatch = statusFilter ? row.dataset.status === statusFilter : true;
+            
+            const showRow = projectMatch && textMatch && statusMatch;
+            row.style.display = showRow ? '' : 'none';
+            
+            if (showRow && row.dataset.project) {
+                visibleCount++;
+                // Highlight search terms
+                if (searchText && searchText.length > 2) {
+                    highlightSearchTerms(row, searchText);
+                } else {
+                    removeHighlight(row);
+                }
+            }
+        });
+        
+        // Update modal headers with filtered counts
+        updateModalHeader(tableId, visibleCount);
+    }
+    
+    function highlightSearchTerms(row, searchText) {
+        const cells = row.querySelectorAll('td');
+        cells.forEach(cell => {
+            if (!cell.querySelector('a')) { // Don't highlight links
+                const originalText = cell.textContent;
+                const regex = new RegExp(`(${searchText})`, 'gi');
+                const highlightedText = originalText.replace(regex, '<mark>$1</mark>');
+                if (highlightedText !== originalText) {
+                    cell.innerHTML = highlightedText;
+                }
+            }
+        });
+    }
+    
+    function removeHighlight(row) {
+        const marks = row.querySelectorAll('mark');
+        marks.forEach(mark => {
+            mark.outerHTML = mark.innerHTML;
+        });
+    }
+    
+    function updateModalHeader(tableId, count) {
+        let modalId = '';
+        if (tableId === 'modalRisksTable') modalId = 'totalRisksModalLabel';
+        else if (tableId === 'openRisksTable') modalId = 'openRisksModalLabel';
+        else if (tableId === 'mitigatedRisksTable') modalId = 'mitigatedRisksModalLabel';
+        
+        if (modalId) {
+            const header = document.getElementById(modalId);
+            const originalText = header.textContent;
+            const baseText = originalText.split('(')[0].trim();
+            header.textContent = `${baseText} (${count} showing)`;
+        }
+    }
+    
+    // Setup modal event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Total Risks Modal filters
+        document.getElementById('modalProjectFilter').addEventListener('change', function() {
+            filterModalTable('modalRisksTable', 'modalProjectFilter', 'modalRiskSearch');
+        });
+        
+        document.getElementById('modalRiskLevelFilter').addEventListener('change', function() {
+            const levelFilter = this.value;
+            const rows = document.querySelectorAll('#modalRisksTable tbody tr');
+            
+            rows.forEach(function(row) {
+                if (!row.dataset.level) return;
+                const levelMatch = levelFilter === 'all' || row.dataset.level === levelFilter;
+                const currentDisplay = row.style.display;
+                
+                if (!levelMatch) {
+                    row.style.display = 'none';
+                } else if (currentDisplay === 'none') {
+                    // Re-apply other filters
+                    filterModalTable('modalRisksTable', 'modalProjectFilter', 'modalRiskSearch');
+                }
+            });
+        });
+        
+        document.getElementById('modalRiskSearch').addEventListener('input', function() {
+            filterModalTable('modalRisksTable', 'modalProjectFilter', 'modalRiskSearch');
+        });
+        
+        // Open Risks Modal filters
+        document.getElementById('openRisksProjectFilter').addEventListener('change', function() {
+            filterModalTable('openRisksTable', 'openRisksProjectFilter', 'openRisksSearch', 'Open');
+        });
+        
+        document.getElementById('openRisksSearch').addEventListener('input', function() {
+            filterModalTable('openRisksTable', 'openRisksProjectFilter', 'openRisksSearch', 'Open');
+        });
+        
+        // Mitigated Risks Modal filters
+        document.getElementById('mitigatedRisksProjectFilter').addEventListener('change', function() {
+            filterModalTable('mitigatedRisksTable', 'mitigatedRisksProjectFilter', 'mitigatedRisksSearch', 'Mitigated');
+        });
+        
+        document.getElementById('mitigatedRisksSearch').addEventListener('input', function() {
+            filterModalTable('mitigatedRisksTable', 'mitigatedRisksProjectFilter', 'mitigatedRisksSearch', 'Mitigated');
+        });
+    });
+    
+    // Clear modal filter functions
+    function clearModalFilters() {
+        document.getElementById('modalProjectFilter').value = 'all';
+        document.getElementById('modalRiskLevelFilter').value = 'all';
+        document.getElementById('modalRiskSearch').value = '';
+        filterModalTable('modalRisksTable', 'modalProjectFilter', 'modalRiskSearch');
+    }
+    
+    function clearOpenRisksFilters() {
+        document.getElementById('openRisksProjectFilter').value = 'all';
+        document.getElementById('openRisksSearch').value = '';
+        filterModalTable('openRisksTable', 'openRisksProjectFilter', 'openRisksSearch', 'Open');
+    }
+    
+    function clearMitigatedRisksFilters() {
+        document.getElementById('mitigatedRisksProjectFilter').value = 'all';
+        document.getElementById('mitigatedRisksSearch').value = '';        filterModalTable('mitigatedRisksTable', 'mitigatedRisksProjectFilter', 'mitigatedRisksSearch', 'Mitigated');
+    }
 </script>
+</div> <!-- End container-fluid -->
 {% endblock %}
