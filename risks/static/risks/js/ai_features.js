@@ -127,6 +127,192 @@ function smartRiskSearch(query, projectId, callback) {
 }
 
 /**
+ * AI-powered risk scoring assistant
+ * @param {string} description - Risk description to analyze
+ * @param {string} category - Optional risk category
+ * @param {number} projectId - Optional project ID for context
+ * @param {function} callback - Callback function to handle the scoring suggestions
+ */
+function aiRiskScoringAssistant(description, category, projectId, callback) {
+    const requestData = {
+        description: description,
+        category: category || null,
+        project_id: projectId || null
+    };
+    
+    fetch('/ai/ai-risk-scoring/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            callback(null, data.scoring_suggestion);
+        } else {
+            callback(new Error(data.error || 'Failed to get scoring suggestions'), null);
+        }
+    })
+    .catch(error => {
+        callback(error, null);
+    });
+}
+
+/**
+ * Auto-categorize risk using AI
+ * @param {string} description - Risk description to categorize
+ * @param {function} callback - Callback function to handle the categorization
+ */
+function autoCategorizeRisk(description, callback) {
+    const requestData = {
+        description: description
+    };
+    
+    fetch('/ai/auto-categorize-risk/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            callback(null, data.categorization);
+        } else {
+            callback(new Error(data.error || 'Failed to categorize risk'), null);
+        }
+    })
+    .catch(error => {
+        callback(error, null);
+    });
+}
+
+/**
+ * Optimize Monte Carlo estimates using AI
+ * @param {string} description - Risk description
+ * @param {string} category - Risk category
+ * @param {number} projectId - Optional project ID for historical context
+ * @param {function} callback - Callback function to handle the estimates
+ */
+function optimizeMonteCarloEstimates(description, category, projectId, callback) {
+    const requestData = {
+        description: description,
+        category: category || null,
+        project_id: projectId || null
+    };
+    
+    fetch('/ai/optimize-monte-carlo/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            callback(null, data.monte_carlo_suggestions);
+        } else {
+            callback(new Error(data.error || 'Failed to optimize Monte Carlo estimates'), null);
+        }
+    })
+    .catch(error => {
+        callback(error, null);
+    });
+}
+
+/**
+ * Analyze risk dependencies for a project
+ * @param {number} projectId - Project ID
+ * @param {function} callback - Callback function to handle the analysis
+ */
+function analyzeRiskDependencies(projectId, callback) {
+    fetch(`/ai/analyze-dependencies/${projectId}/`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            callback(null, data.dependency_analysis);
+        } else {
+            callback(new Error(data.message || 'Failed to analyze dependencies'), null);
+        }
+    })
+    .catch(error => {
+        callback(error, null);
+    });
+}
+
+/**
+ * Generate executive summary for a project
+ * @param {number} projectId - Project ID
+ * @param {function} callback - Callback function to handle the summary
+ */
+function generateExecutiveSummary(projectId, callback) {
+    fetch(`/ai/executive-summary/${projectId}/`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            callback(null, data.executive_summary);
+        } else {
+            callback(new Error(data.message || 'Failed to generate executive summary'), null);
+        }
+    })
+    .catch(error => {
+        callback(error, null);
+    });
+}
+
+/**
+ * Generate mitigation timeline for project risks
+ * @param {number} projectId - Project ID
+ * @param {object} constraints - Optional project constraints
+ * @param {function} callback - Callback function to handle the timeline
+ */
+function generateMitigationTimeline(projectId, constraints, callback) {
+    const requestData = {
+        project_id: projectId,
+        constraints: constraints || {}
+    };
+    
+    fetch('/ai/mitigation-timeline/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            callback(null, data.mitigation_timeline);
+        } else {
+            callback(new Error(data.message || 'Failed to generate timeline'), null);
+        }
+    })
+    .catch(error => {
+        callback(error, null);
+    });
+}
+
+/**
  * Helper function to get CSRF token from cookies
  * @returns {string} CSRF token
  */

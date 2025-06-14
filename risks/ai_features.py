@@ -15,6 +15,31 @@ def setup_gemini_api():
         raise ValueError("GEMINI_API_KEY not set in settings")
     genai.configure(api_key=api_key)
 
+def extract_json_from_response(response_text: str) -> str:
+    """
+    Extract JSON content from Gemini response that may be wrapped in markdown code blocks.
+    
+    Args:
+        response_text: Raw response text from Gemini
+        
+    Returns:
+        Clean JSON string
+    """
+    # Remove markdown code block markers if present
+    if '```json' in response_text:
+        # Extract content between ```json and ```
+        start_marker = '```json'
+        end_marker = '```'
+        start_idx = response_text.find(start_marker)
+        if start_idx != -1:
+            start_idx += len(start_marker)
+            end_idx = response_text.find(end_marker, start_idx)
+            if end_idx != -1:
+                return response_text[start_idx:end_idx].strip()
+    
+    # If no markdown markers, return as is
+    return response_text.strip()
+
 def enhance_risk_description(raw_description: str, category: str = None) -> Dict[str, Any]:
     """
     Use Gemini to enhance and standardize risk descriptions.
@@ -57,15 +82,17 @@ def enhance_risk_description(raw_description: str, category: str = None) -> Dict
       "improvements": ["Improvement 1", "Improvement 2", ...],
       "sentiment": "positive/negative/neutral",
       "clarity_score": 1-10
-    }}
-    """
+    }}    """
     
     try:
         # Generate the response
         response = model.generate_content(prompt)
         
+        # Extract clean JSON from response (handles markdown code blocks)
+        clean_json = extract_json_from_response(response.text)
+        
         # Parse the JSON response
-        result = json.loads(response.text)
+        result = json.loads(clean_json)
         return result
     
     except Exception as e:
@@ -134,13 +161,15 @@ def analyze_risk_trend(risk_titles: List[str], risk_descriptions: List[str]) -> 
       ]
     }}
     """
-    
     try:
         # Generate the response
         response = model.generate_content(prompt)
         
+        # Extract clean JSON from response (handles markdown code blocks)
+        clean_json = extract_json_from_response(response.text)
+        
         # Parse the JSON response
-        result = json.loads(response.text)
+        result = json.loads(clean_json)
         return result
     
     except Exception as e:
@@ -205,13 +234,15 @@ def generate_risk_response_suggestions(risk_description: str, risk_category: str
       ...
     ]
     """
-    
     try:
         # Generate the response
         response = model.generate_content(prompt)
         
+        # Extract clean JSON from response (handles markdown code blocks)
+        clean_json = extract_json_from_response(response.text)
+        
         # Parse the JSON response
-        result = json.loads(response.text)
+        result = json.loads(clean_json)
         return result
     
     except Exception as e:
@@ -273,13 +304,15 @@ def smart_risk_search(query: str, project_context: str = None) -> Dict[str, Any]
       "rewritten_query": "The search query rewritten for better results"
     }}
     """
-    
     try:
         # Generate the response
         response = model.generate_content(prompt)
         
+        # Extract clean JSON from response (handles markdown code blocks)
+        clean_json = extract_json_from_response(response.text)
+        
         # Parse the JSON response
-        result = json.loads(response.text)
+        result = json.loads(clean_json)
         return result
     
     except Exception as e:
@@ -293,6 +326,498 @@ def smart_risk_search(query: str, project_context: str = None) -> Dict[str, Any]
                 "status": [],
                 "minimum_risk_score": None,
                 "date_range": None
+            },            "rewritten_query": query
+        }
+
+def ai_risk_scoring_assistant(risk_description: str, category: str = None,
+                             similar_risks: List[Dict] = None) -> Dict[str, Any]:
+    """
+    AI-powered risk scoring with reasoning to suggest likelihood and impact scores.
+    
+    Args:
+        risk_description: The risk description to analyze
+        category: Optional risk category for context
+        similar_risks: List of similar risks with their scores for context
+        
+    Returns:
+        Dictionary with suggested scores and reasoning
+    """
+    setup_gemini_api()
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    context = f"Category: {category}" if category else "No category specified"
+    similar_context = ""
+    if similar_risks:
+        similar_context = "Similar risks in project:\n" + "\n".join([
+            f"- {r.get('title', 'Untitled')}: L{r.get('likelihood', 'N/A')}/I{r.get('impact', 'N/A')}" 
+            for r in similar_risks[:3]
+        ])
+    
+    prompt = f"""
+    As a risk management expert, analyze this risk and suggest likelihood and impact scores.
+    
+    RISK DESCRIPTION: {risk_description}
+    CONTEXT: {context}
+    {similar_context}
+    
+    SCORING SCALE:
+    - Likelihood: 1 (Low - rarely occurs), 2 (Medium - occasionally occurs), 3 (High - frequently occurs)
+    - Impact: 1 (Low - minimal effect), 2 (Medium - moderate effect), 3 (High - severe effect)
+    
+    Provide scores with clear reasoning based on the description content and context.
+    
+    FORMAT AS JSON:
+    {{
+      "suggested_likelihood": 1-3,
+      "likelihood_reasoning": "Clear explanation for likelihood score",
+      "suggested_impact": 1-3,
+      "impact_reasoning": "Clear explanation for impact score",
+      "confidence_level": "High/Medium/Low",
+      "key_factors": ["factor1", "factor2", "factor3"]
+    }}
+    """
+    try:
+        response = model.generate_content(prompt)
+        # Extract clean JSON from response (handles markdown code blocks)
+        clean_json = extract_json_from_response(response.text)
+        return json.loads(clean_json)
+    except Exception as e:
+        print(f"Error in AI risk scoring: {e}")
+        return {
+            "suggested_likelihood": 2,
+            "likelihood_reasoning": "Unable to analyze - defaulting to medium likelihood",
+            "suggested_impact": 2,
+            "impact_reasoning": "Unable to analyze - defaulting to medium impact",
+            "confidence_level": "Low",
+            "key_factors": ["Analysis unavailable"]
+        }
+
+def auto_categorize_risk(risk_description: str, available_categories: List[str]) -> Dict[str, Any]:
+    """
+    Automatically suggest the most appropriate risk category based on description.
+    
+    Args:
+        risk_description: The risk description to analyze
+        available_categories: List of available category names
+        
+    Returns:
+        Dictionary with suggested category and confidence
+    """
+    setup_gemini_api()
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    categories_text = ", ".join(available_categories)
+    
+    prompt = f"""
+    As a risk management expert, categorize this risk based on its description.
+    
+    RISK DESCRIPTION: {risk_description}
+    
+    AVAILABLE CATEGORIES: {categories_text}
+    
+    INSTRUCTIONS:
+    1. Analyze the risk description content
+    2. Select the most appropriate category from the available options
+    3. Provide reasoning for your choice
+    4. Include confidence level and alternative suggestions if applicable
+    
+    FORMAT AS JSON:
+    {{
+      "suggested_category": "Category name from available list",
+      "confidence": 0.0-1.0,
+      "reasoning": "Clear explanation for category selection",
+      "alternative_categories": ["alternative1", "alternative2"],
+      "keywords_identified": ["keyword1", "keyword2"]
+    }}
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        # Extract clean JSON from response (handles markdown code blocks)
+
+        clean_json = extract_json_from_response(response.text)
+
+        result = json.loads(clean_json)
+        
+        # Ensure suggested category is in available categories
+        if result["suggested_category"] not in available_categories:
+            result["suggested_category"] = available_categories[0] if available_categories else "Technical"
+            result["confidence"] = 0.3
+            result["reasoning"] += " (Fallback to default category)"
+            
+        return result
+    except Exception as e:
+        print(f"Error in auto categorization: {e}")
+        return {
+            "suggested_category": available_categories[0] if available_categories else "Technical",
+            "confidence": 0.2,
+            "reasoning": "AI categorization unavailable - using default",
+            "alternative_categories": [],
+            "keywords_identified": []
+        }
+
+def optimize_monte_carlo_estimates(risk_description: str, category: str = None, 
+                                  historical_data: List[Dict] = None) -> Dict[str, Any]:
+    """
+    AI suggests realistic cost estimates for Monte Carlo simulation based on risk analysis.
+    
+    Args:
+        risk_description: The risk description to analyze
+        category: Risk category for context
+        historical_data: Optional historical cost data for similar risks
+        
+    Returns:
+        Dictionary with suggested cost estimates and probability
+    """
+    setup_gemini_api()
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    context = f"Category: {category}" if category else "No category specified"
+    historical_context = ""
+    if historical_data:
+        historical_context = "Historical cost data for similar risks:\n" + "\n".join([
+            f"- {data.get('description', 'Unknown')}: ${data.get('cost', 0):,.2f}" 
+            for data in historical_data[:3]
+        ])
+    
+    prompt = f"""
+    As a risk management and cost estimation expert, suggest realistic cost estimates for Monte Carlo simulation.
+    
+    RISK DESCRIPTION: {risk_description}
+    CONTEXT: {context}
+    {historical_context}
+    
+    INSTRUCTIONS:
+    1. Analyze the risk to understand potential financial impact
+    2. Suggest optimistic (best case), most likely, and pessimistic (worst case) cost estimates
+    3. Suggest realistic probability percentage (1-100%)
+    4. Provide reasoning for each estimate
+    5. Consider both direct and indirect costs
+    
+    FORMAT AS JSON:
+    {{
+      "suggested_probability": 1-100,
+      "optimistic_cost": 0.00,
+      "most_likely_cost": 0.00,
+      "pessimistic_cost": 0.00,
+      "probability_reasoning": "Why this probability makes sense",
+      "cost_reasoning": "Explanation of cost estimates",
+      "cost_factors": ["factor1", "factor2", "factor3"],
+      "confidence_level": "High/Medium/Low"
+    }}
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        # Extract clean JSON from response (handles markdown code blocks)
+
+        clean_json = extract_json_from_response(response.text)
+
+        return json.loads(clean_json)
+    except Exception as e:
+        print(f"Error in Monte Carlo optimization: {e}")
+        return {
+            "suggested_probability": 25,
+            "optimistic_cost": 1000.00,
+            "most_likely_cost": 5000.00,
+            "pessimistic_cost": 15000.00,
+            "probability_reasoning": "Default moderate probability estimate",
+            "cost_reasoning": "AI estimation unavailable - using conservative defaults",
+            "cost_factors": ["Default estimation"],
+            "confidence_level": "Low"
+        }
+
+def analyze_risk_dependencies(project_risks: List[Dict]) -> Dict[str, Any]:
+    """
+    Identify potential relationships and cascading effects between project risks.
+    
+    Args:
+        project_risks: List of risk dictionaries with title, description, category, etc.
+        
+    Returns:
+        Dictionary with identified dependencies and cascade effects
+    """
+    setup_gemini_api()
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    risks_text = ""
+    for i, risk in enumerate(project_risks):
+        risks_text += f"Risk {i+1}: {risk.get('title', 'Untitled')}\n"
+        risks_text += f"  Category: {risk.get('category', 'N/A')}\n"
+        risks_text += f"  Description: {risk.get('description', 'No description')}\n"
+        risks_text += f"  Risk Score: {risk.get('risk_score', 'N/A')}\n\n"
+    
+    prompt = f"""
+    As a risk management expert, analyze these project risks to identify dependencies and potential cascade effects.
+    
+    PROJECT RISKS:
+    {risks_text}
+    
+    INSTRUCTIONS:
+    1. Identify risks that could trigger or amplify other risks
+    2. Find potential cascade effects (domino effects)
+    3. Suggest risk clusters that should be managed together
+    4. Identify critical risks that could impact multiple other risks
+    5. Provide mitigation strategies for high-impact dependencies
+    
+    FORMAT AS JSON:
+    {{
+      "risk_dependencies": [
+        {{
+          "primary_risk": "Risk title",
+          "dependent_risks": ["Risk title 1", "Risk title 2"],
+          "dependency_type": "Triggers/Amplifies/Enables",
+          "impact_description": "How the dependency works"
+        }}
+      ],
+      "cascade_scenarios": [
+        {{
+          "trigger_risk": "Risk title",
+          "cascade_path": ["Risk 1", "Risk 2", "Risk 3"],
+          "total_impact": "High/Medium/Low",
+          "scenario_description": "Description of cascade effect"
+        }}
+      ],
+      "risk_clusters": [
+        {{
+          "cluster_name": "Cluster description",
+          "risks": ["Risk 1", "Risk 2", "Risk 3"],
+          "management_strategy": "How to manage this cluster together"
+        }}
+      ],
+      "critical_risks": [
+        {{
+          "risk": "Risk title",
+          "criticality_reason": "Why this risk is critical",
+          "affected_risks_count": 3
+        }}
+      ]
+    }}
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        # Extract clean JSON from response (handles markdown code blocks)
+
+        clean_json = extract_json_from_response(response.text)
+
+        return json.loads(clean_json)
+    except Exception as e:
+        print(f"Error in risk dependency analysis: {e}")
+        return {
+            "risk_dependencies": [],
+            "cascade_scenarios": [],
+            "risk_clusters": [],
+            "critical_risks": []
+        }
+
+def generate_executive_summary(project_risks: List[Dict], monte_carlo_results: Dict = None) -> Dict[str, Any]:
+    """
+    Create executive-friendly risk summaries with key insights and recommendations.
+    
+    Args:
+        project_risks: List of project risks
+        monte_carlo_results: Optional Monte Carlo simulation results
+        
+    Returns:
+        Dictionary with executive summary components
+    """
+    setup_gemini_api()
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    # Prepare risk summary
+    total_risks = len(project_risks)
+    high_risks = len([r for r in project_risks if r.get('risk_score', 0) >= 6])
+    medium_risks = len([r for r in project_risks if 3 <= r.get('risk_score', 0) < 6])
+    low_risks = len([r for r in project_risks if r.get('risk_score', 0) < 3])
+    
+    risks_summary = f"Total risks: {total_risks} (High: {high_risks}, Medium: {medium_risks}, Low: {low_risks})"
+    
+    # Top risks for context
+    top_risks = sorted(project_risks, key=lambda x: x.get('risk_score', 0), reverse=True)[:5]
+    top_risks_text = "\n".join([
+        f"- {risk.get('title', 'Untitled')} (Score: {risk.get('risk_score', 'N/A')}): {risk.get('description', 'No description')[:100]}..."
+        for risk in top_risks
+    ])
+    
+    monte_carlo_context = ""
+    if monte_carlo_results:
+        monte_carlo_context = f"Monte Carlo Results: Expected Value: ${monte_carlo_results.get('expected_value', 0):,.2f}, 95% Confidence: ${monte_carlo_results.get('percentile_95', 0):,.2f}"
+    
+    prompt = f"""
+    As a senior risk management consultant, create an executive summary for project leadership.
+    
+    RISK OVERVIEW:
+    {risks_summary}
+    
+    TOP RISKS:
+    {top_risks_text}
+    
+    {monte_carlo_context}
+    
+    INSTRUCTIONS:
+    Create a concise executive summary that includes:
+    1. Overall risk posture assessment
+    2. Key concerns that require leadership attention
+    3. Financial impact summary (if Monte Carlo data available)
+    4. Strategic recommendations
+    5. Priority actions needed
+    
+    Write in business language, avoid technical jargon.
+    
+    FORMAT AS JSON:
+    {{
+      "executive_summary": "2-3 paragraph executive summary",
+      "key_concerns": [
+        {{
+          "concern": "Brief concern description",
+          "business_impact": "Impact in business terms",
+          "urgency": "High/Medium/Low"
+        }}
+      ],
+      "financial_summary": {{
+        "total_exposure": "Financial exposure description",
+        "key_cost_drivers": ["driver1", "driver2"],
+        "budget_recommendations": "Budget-related recommendations"
+      }},
+      "strategic_recommendations": [
+        {{
+          "recommendation": "Strategic recommendation",
+          "rationale": "Why this is important",
+          "timeline": "When to implement"
+        }}
+      ],
+      "next_steps": [
+        "Immediate action 1",
+        "Immediate action 2",
+        "Immediate action 3"
+      ]
+    }}
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        # Extract clean JSON from response (handles markdown code blocks)
+
+        clean_json = extract_json_from_response(response.text)
+
+        return json.loads(clean_json)
+    except Exception as e:
+        print(f"Error generating executive summary: {e}")
+        return {
+            "executive_summary": "Risk analysis unavailable. Manual review recommended.",
+            "key_concerns": [],
+            "financial_summary": {
+                "total_exposure": "Analysis unavailable",
+                "key_cost_drivers": [],
+                "budget_recommendations": "Conduct manual assessment"
             },
-            "rewritten_query": query
+            "strategic_recommendations": [],
+            "next_steps": ["Conduct manual risk review"]
+        }
+
+def generate_mitigation_timeline(risk_responses: List[Dict], project_constraints: Dict = None) -> Dict[str, Any]:
+    """
+    AI suggests optimal sequencing and timing for risk response activities.
+    
+    Args:
+        risk_responses: List of risk response strategies with details
+        project_constraints: Optional project constraints (budget, timeline, resources)
+        
+    Returns:
+        Dictionary with suggested timeline and prioritization
+    """
+    setup_gemini_api()
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    responses_text = ""
+    for i, response in enumerate(risk_responses):
+        responses_text += f"Response {i+1}: {response.get('strategy', 'Unknown Strategy')}\n"
+        responses_text += f"  Risk: {response.get('risk_title', 'Unknown Risk')}\n"
+        responses_text += f"  Type: {response.get('type', 'Unknown')}\n"
+        responses_text += f"  Complexity: {response.get('implementation_complexity', 'Unknown')}\n"
+        responses_text += f"  Effectiveness: {response.get('estimated_effectiveness', 'Unknown')}%\n"
+        responses_text += f"  Resources: {response.get('resources_required', 'Unknown')}\n\n"
+    
+    constraints_text = ""
+    if project_constraints:
+        constraints_text = f"Project Constraints:\n"
+        constraints_text += f"- Budget: {project_constraints.get('budget', 'Not specified')}\n"
+        constraints_text += f"- Timeline: {project_constraints.get('timeline', 'Not specified')}\n"
+        constraints_text += f"- Team Size: {project_constraints.get('team_size', 'Not specified')}\n"
+    
+    prompt = f"""
+    As a project management and risk mitigation expert, create an optimal timeline for implementing these risk responses.
+    
+    RISK RESPONSES TO SCHEDULE:
+    {responses_text}
+    
+    {constraints_text}
+    
+    INSTRUCTIONS:
+    1. Prioritize responses based on risk severity, implementation complexity, and effectiveness
+    2. Consider dependencies between responses
+    3. Account for resource constraints and parallel execution opportunities
+    4. Suggest realistic timeframes for each phase
+    5. Identify quick wins vs. long-term initiatives
+    
+    FORMAT AS JSON:
+    {{
+      "timeline_phases": [
+        {{
+          "phase": "Phase 1: Immediate Actions",
+          "duration": "1-2 weeks",
+          "responses": [
+            {{
+              "strategy": "Response strategy",
+              "priority": "High/Medium/Low",
+              "start_week": 1,
+              "duration_weeks": 2,
+              "parallel_execution": true/false
+            }}
+          ]
+        }}
+      ],
+      "quick_wins": [
+        {{
+          "strategy": "Quick win strategy",
+          "benefit": "Expected benefit",
+          "effort": "Implementation effort"
+        }}
+      ],
+      "resource_allocation": {{
+        "week_1_2": ["Activity 1", "Activity 2"],
+        "week_3_4": ["Activity 3", "Activity 4"],
+        "week_5_plus": ["Long-term activities"]
+      }},
+      "dependencies": [
+        {{
+          "dependent_response": "Response A",
+          "prerequisite": "Response B must complete first",
+          "reason": "Why this dependency exists"
+        }}
+      ],
+      "risk_timeline_summary": "Overall timeline assessment and key milestones"
+    }}
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        # Extract clean JSON from response (handles markdown code blocks)
+
+        clean_json = extract_json_from_response(response.text)
+
+        return json.loads(clean_json)
+    except Exception as e:
+        print(f"Error generating mitigation timeline: {e}")
+        return {
+            "timeline_phases": [{
+                "phase": "Phase 1: Manual Planning Required",
+                "duration": "TBD",
+                "responses": []
+            }],
+            "quick_wins": [],
+            "resource_allocation": {},
+            "dependencies": [],
+            "risk_timeline_summary": "AI timeline generation unavailable - manual planning required"
         }

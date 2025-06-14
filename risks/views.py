@@ -445,11 +445,10 @@ def add_risk_response(request, risk_id):
         # Check for AI suggested responses from query parameters
         suggested_response = request.GET.get('suggested_response', '')
         suggested_type = request.GET.get('suggested_type', '')
-        
-        # Initialize form with suggested values if provided
+          # Initialize form with suggested values if provided
         initial_data = {}
         if suggested_response:
-            initial_data['response_text'] = suggested_response
+            initial_data['description'] = suggested_response
         if suggested_type:
             # Map AI suggestion type to form choices
             type_mapping = {

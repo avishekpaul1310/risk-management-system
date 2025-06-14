@@ -24,10 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-hc*67w03+ia)acek4%4cjij=s7k)pbhd-%s30rm1wi*v=)4r)f'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-hc*67w03+ia)acek4%4cjij=s7k)pbhd-%s30rm1wi*v=)4r)f')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = []
 
@@ -148,7 +148,19 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Notification settings
 
-# Google Gemini API Settings
+# Google Gemini AI Configuration
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-RISK_NOTIFY_HIGH_RISKS = True
-RISK_NOTIFY_STATUS_CHANGE = True
+
+# AI Features Settings
+AI_FEATURES_ENABLED = bool(GEMINI_API_KEY)  # Automatically enable AI if API key is present
+AI_REQUEST_TIMEOUT = 30  # Timeout for AI API requests in seconds
+AI_MAX_RETRIES = 3  # Maximum retries for failed AI requests
+
+# Risk Management AI Settings
+RISK_NOTIFY_HIGH_RISKS = os.getenv('RISK_NOTIFY_HIGH_RISKS', 'True').lower() == 'true'
+RISK_NOTIFY_STATUS_CHANGE = os.getenv('RISK_NOTIFY_STATUS_CHANGE', 'True').lower() == 'true'
+
+# AI Model Configuration
+AI_MODEL_NAME = 'gemini-1.5-flash'  # Default Gemini model to use
+AI_TEMPERATURE = 0.1  # Lower temperature for more consistent results
+AI_MAX_OUTPUT_TOKENS = 2048  # Maximum tokens in AI responses
