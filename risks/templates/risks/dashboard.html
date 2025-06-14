@@ -143,9 +143,9 @@
 <!-- New Row with Risk Heat Map -->
 <div class="row mb-4">
     <div class="col-md-6">
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">Risk Heat Map</h5>
+        <div class="card mb-4">            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Risk Distribution Chart (Open Risks)</h5>
+                <small class="text-light">Shows active risks by likelihood and impact combinations</small>
             </div>
             <div class="card-body" style="height: 400px; padding-bottom: 30px;">
                 <canvas id="riskHeatMap" height="350"></canvas>
@@ -245,9 +245,35 @@
     const categoryData = JSON.parse(document.getElementById('category-data').textContent);
       // Retrieve status data from json_script tag
     const statusData = JSON.parse(document.getElementById('status-data').textContent);
-    
-    // Retrieve risk matrix data from backend
+      // Retrieve risk matrix data from backend
     const riskMatrixData = JSON.parse(document.getElementById('risk-matrix-data').textContent);
+      // Debug: Log the risk matrix data to console
+    console.log('Risk Matrix Data from backend:', riskMatrixData);
+      // Debug: Show the complete data structure with indices
+    console.log('Complete risk matrix data structure:');
+    riskMatrixData.forEach((entry, index) => {
+        console.log(`Index ${index}: x=${entry.x}, y=${entry.y}, score=${entry.v}, count=${entry.count}`);
+        if (entry.v === 6) {
+            console.log(`  ^^^ This is a SCORE 6 entry at index ${index}`);
+        }
+    });
+      // Debug: Log score 6 entries specifically
+    const score6Entries = riskMatrixData.filter(entry => entry.v === 6);
+    console.log('Score 6 entries:', score6Entries);
+      // Debug: Calculate total risks with score 6
+    const totalScore6Risks = score6Entries.reduce((sum, entry) => sum + entry.count, 0);
+    console.log('Total risks with score 6:', totalScore6Risks);
+    
+    // Debug: Log each score 6 entry in detail
+    score6Entries.forEach((entry, index) => {
+        console.log(`Score 6 entry ${index + 1}:`, {
+            position: `(${entry.x}, ${entry.y})`,
+            likelihood: entry.x + 1,
+            impact: entry.y + 1,
+            score: entry.v,
+            count: entry.count
+        });
+    });
     
     let severityChart, categoryChart, statusChart, heatMapChart;
     
@@ -352,134 +378,116 @@
                     }
                 }
             }
+        });        // Risk Heat Map - Simple bar chart approach
+        const heatMapCtx = document.getElementById('riskHeatMap').getContext('2d');
+        
+        // Create labels and data for each risk score combination
+        const heatMapLabels = [];
+        const heatMapCounts = [];
+        const heatMapColors = [];
+        
+        // Process risk matrix data to create bar chart
+        riskMatrixData.forEach((entry, index) => {
+            if (entry.count > 0) {  // Only show cells with risks
+                const likelihoodLabels = ['Low', 'Medium', 'High'];
+                const impactLabels = ['Low', 'Medium', 'High'];
+                const label = `${likelihoodLabels[entry.x]} Likelihood × ${impactLabels[entry.y]} Impact (Score ${entry.v})`;
+                
+                heatMapLabels.push(label);
+                heatMapCounts.push(entry.count);
+                
+                // Color based on risk score
+                if (entry.v >= 6) {
+                    heatMapColors.push('rgba(220, 53, 69, 0.8)'); // Red for high risk
+                } else if (entry.v >= 3) {
+                    heatMapColors.push('rgba(255, 193, 7, 0.8)'); // Yellow for medium risk
+                } else {
+                    heatMapColors.push('rgba(40, 167, 69, 0.8)'); // Green for low risk
+                }
+            }
         });
         
-        // Risk Heat Map
-        const heatMapCtx = document.getElementById('riskHeatMap').getContext('2d');
+        console.log('Heat map labels:', heatMapLabels);
+        console.log('Heat map counts:', heatMapCounts);
+        
         heatMapChart = new Chart(heatMapCtx, {
-            type: 'matrix',
+            type: 'bar',
             data: {
+                labels: heatMapLabels,
                 datasets: [{
-                    label: 'Risk Matrix',
-                    data: riskMatrixData,                    backgroundColor(ctx) {
-                        const count = ctx.dataset.data[ctx.dataIndex].count;
-                        const alpha = count > 0 ? 0.8 : 0.1; // Make empty cells very transparent
-                        
-                        if (count === 0) {
-                            return `rgba(128, 128, 128, ${alpha})`; // Gray for empty cells
-                        } else if (count >= 3) {
-                            return `rgba(220, 53, 69, ${alpha})`; // High count (red)
-                        } else if (count >= 1) {
-                            return `rgba(255, 193, 7, ${alpha})`; // Medium count (yellow)
-                        } else {
-                            return `rgba(40, 167, 69, ${alpha})`; // This shouldn't happen, but green as fallback
-                        }
-                    },
-                    borderWidth: 1,
-                    borderColor: 'rgba(0, 0, 0, 0.1)',
-                    width: ({ chart }) => (chart.chartArea || {}).width / 3 - 1,
-                    height: ({ chart }) => (chart.chartArea || {}).height / 3 - 1
+                    label: 'Number of Risks',
+                    data: heatMapCounts,
+                    backgroundColor: heatMapColors,
+                    borderColor: heatMapColors.map(color => color.replace('0.8', '1')),
+                    borderWidth: 1
                 }]
-            },
-            options: {
+            },            options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
+                    title: {
+                        display: true,
+                        text: 'Risk Distribution by Likelihood × Impact'
+                    },
                     tooltip: {
                         callbacks: {
-                            title() {
-                                return '';
-                            },                            label(ctx) {
-                                const v = ctx.dataset.data[ctx.dataIndex];
-                                const likelihoodLabels = ['Low', 'Medium', 'High'];
-                                const impactLabels = ['Low', 'Medium', 'High'];
-                                
-                                if (v.count === 0) {
-                                    return [
-                                        `Likelihood: ${likelihoodLabels[v.x]}`,
-                                        `Impact: ${impactLabels[v.y]}`,
-                                        `Risk Score: ${v.v}`,
-                                        `No risks in this category`
-                                    ];
-                                } else {
-                                    return [
-                                        `Likelihood: ${likelihoodLabels[v.x]}`,
-                                        `Impact: ${impactLabels[v.y]}`,
-                                        `Risk Score: ${v.v}`,
-                                        `Number of Risks: ${v.count}`
-                                    ];
+                            title: function(context) {
+                                return context[0].label; // Show the full category name as title
+                            },
+                            label: function(context) {
+                                const value = context.parsed.y || 0;
+                                console.log('Bar chart tooltip - Label:', context.label, 'Value:', value);
+                                return `Number of Risks: ${value}`;
+                            },
+                            afterLabel: function(context) {
+                                // Extract score from label for additional info
+                                const label = context.label;
+                                const scoreMatch = label.match(/Score (\d+)/);
+                                if (scoreMatch) {
+                                    const score = scoreMatch[1];
+                                    if (score >= 6) {
+                                        return 'Risk Level: High';
+                                    } else if (score >= 3) {
+                                        return 'Risk Level: Medium';
+                                    } else {
+                                        return 'Risk Level: Low';
+                                    }
                                 }
+                                return '';
                             }
                         }
                     },
                     legend: {
-                        display: false
-                    }
-                },
-                layout: {
-                    padding: {
-                        top: 20,
-                        right: 20,
-                        bottom: 50, // Increased padding at the bottom for X-axis labels
-                        left: 20
+                        display: false // Hide legend since colors are self-explanatory
                     }
                 },
                 scales: {
-                    x: {
-                        offset: true,  // This helps separate the axis from the chart area
+                    y: {
+                        beginAtZero: true,
                         ticks: {
-                            callback: (v) => ['Low', 'Medium', 'High'][v],
-                            padding: 15,   // Increased padding for X-axis ticks
-                            font: {
-                                size: 12,
-                                weight: 'bold'
-                            }
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false
+                            precision: 0
                         },
                         title: {
                             display: true,
-                            text: 'Likelihood',
-                            padding: {
-                                top: 25,   // Increased padding to move title further from ticks
-                                bottom: 10
-                            },
-                            font: {
-                                size: 14,
-                                weight: 'bold'
-                            }
+                            text: 'Number of Risks'
                         }
                     },
-                    y: {
-                        offset: true,  // This helps separate the axis from the chart area
-                        ticks: {
-                            callback: (v) => ['Low', 'Medium', 'High'][v],
-                            padding: 10,
-                            font: {
-                                size: 12,
-                                weight: 'bold'
-                            }
-                        },
-                        grid: {
-                            display: false,
-                            drawBorder: false
-                        },
+                    x: {
                         title: {
                             display: true,
-                            text: 'Impact',
-                            padding: {
-                                top: 0,
-                                bottom: 10
-                            },
-                            font: {
-                                size: 14,
-                                weight: 'bold'
-                            }
+                            text: 'Risk Categories (hover for details)'
                         },
-                        reverse: true
+                        ticks: {
+                            display: false // Hide individual bar labels
+                        },
+                        grid: {
+                            display: false // Clean up the appearance
+                        }
                     }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
                 }
             }
         });

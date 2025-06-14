@@ -264,44 +264,45 @@ def dashboard(request):
     # Get all projects and risks
     projects = Project.objects.all()
     risks = Risk.objects.all()
+    open_risks_queryset = risks.filter(status='Open')
     
     # Project statistics
     project_count = projects.count()
     
-    # Risk statistics
+    # Risk statistics (all risks)
     risk_count = risks.count()
     
-    # Calculate risk levels based on the risk_level property
-    high_risks = sum(1 for risk in risks if risk.risk_level == 'High')
-    medium_risks = sum(1 for risk in risks if risk.risk_level == 'Medium')
-    low_risks = sum(1 for risk in risks if risk.risk_level == 'Low')
-    
-    # Risks by status
-    open_risks = risks.filter(status='Open').count()
+    # Calculate risk levels based on Open risks only (for dashboard focus)
+    high_risks = sum(1 for risk in open_risks_queryset if risk.risk_level == 'High')
+    medium_risks = sum(1 for risk in open_risks_queryset if risk.risk_level == 'Medium')
+    low_risks = sum(1 for risk in open_risks_queryset if risk.risk_level == 'Low')
+      # Risks by status
+    open_risks = open_risks_queryset.count()
     mitigated_risks = risks.filter(status='Mitigated').count()
     closed_risks = risks.filter(status='Closed').count()
     
-    # Risks by category
+    # Risks by category (Open risks only for dashboard focus)
     categories = Category.objects.all()
     risks_by_category = {}
     for category in categories:
-        risks_by_category[category.name] = risks.filter(category=category).count()
+        count = open_risks_queryset.filter(category=category).count()
+        if count > 0:  # Only include categories that have open risks
+            risks_by_category[category.name] = count
+    # Recent risks (last 10) - focus on recent Open risks for dashboard relevance
+    recent_risks = open_risks_queryset.order_by('-created_at')[:10]
     
-    # Recent risks (last 10)
-    recent_risks = risks.order_by('-created_at')[:10]
+    # High priority risks (from Open risks)
+    high_priority_risks = open_risks_queryset.order_by('-likelihood', '-impact')[:10]
     
-    # High priority risks
-    high_priority_risks = risks.filter(status='Open').order_by('-likelihood', '-impact')[:10]
-    
-    # Prepare data for risk matrix (heat map)
+    # Prepare data for risk matrix (heat map) - use only Open risks for active risk management
     risk_matrix = [
         [0, 0, 0],  # Low likelihood: [low impact, med impact, high impact]
         [0, 0, 0],  # Med likelihood: [low impact, med impact, high impact]
         [0, 0, 0],  # High likelihood: [low impact, med impact, high impact]
     ]
     
-    # Count risks for each cell in the matrix
-    for risk in risks:
+    # Count risks for each cell in the matrix (Open risks only)
+    for risk in open_risks_queryset:
         if risk.likelihood > 0 and risk.impact > 0:  # Ensure valid values
             li = risk.likelihood - 1  # 0-based index (likelihood is 1, 2, or 3)
             im = risk.impact - 1      # 0-based index (impact is 1, 2, or 3)
