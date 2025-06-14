@@ -275,27 +275,28 @@ class Command(BaseCommand):
             )
             if created:
                 created_risks.append(risk)
-                self.stdout.write(f'Created risk: {risk_data["title"]} (Impact: {risk_data["impact"]}, Likelihood: {risk_data["likelihood"]})')
-
-        # Create some sample risk responses
+                self.stdout.write(f'Created risk: {risk_data["title"]} (Impact: {risk_data["impact"]}, Likelihood: {risk_data["likelihood"]})')        # Create some sample risk responses
         response_data = [
             {
-                'type': 'Mitigate',
+                'response_type': 'Mitigate',
                 'description': 'Implement automated backup systems and failover procedures.',
                 'cost_estimate': Decimal('25000'),
-                'currency': 'USD'
+                'currency': 'USD',
+                'responsible_person': 'IT Team Lead'
             },
             {
-                'type': 'Transfer',
+                'response_type': 'Transfer',
                 'description': 'Purchase comprehensive cyber insurance coverage.',
                 'cost_estimate': Decimal('15000'),
-                'currency': 'USD'
+                'currency': 'USD',
+                'responsible_person': 'Risk Manager'
             },
             {
-                'type': 'Accept',
+                'response_type': 'Accept',
                 'description': 'Accept the risk and establish contingency funds.',
                 'cost_estimate': Decimal('0'),
-                'currency': 'USD'
+                'currency': 'USD',
+                'responsible_person': 'Project Manager'
             }
         ]
 
@@ -304,11 +305,12 @@ class Command(BaseCommand):
             if i < len(created_risks):
                 risk_response, created = RiskResponse.objects.get_or_create(
                     risk=created_risks[i],
-                    type=response['type'],
+                    response_type=response['response_type'],
                     defaults={
                         'description': response['description'],
                         'cost_estimate': response['cost_estimate'],
                         'currency': response['currency'],
+                        'responsible_person': response['responsible_person'],
                         'created_by': user
                     }
                 )
